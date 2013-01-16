@@ -44,12 +44,55 @@ def ReadPosData(fina):
 
 #*******************************************************************************
 
-class RelTracker:
+class RelAxis:
 	def __init__(self):
 		pass
 
+	def Train(self):
+		print "Train"
+
+class RelTracker:
+	def __init__(self):
+		self.trainingData = []
+
 	def Add(self, im, pos):
-		pass
+		self.trainingData.append((im, pos))
+		assert(len(self.trainingData[0][1]) == len(self.trainingData[-1][1]))
+
+
+	def Train(self):
+		
+		assert(len(self.trainingData)>0)
+		numTrackers = len(self.trainingData[0][1])
+
+		#First layer of hierarchy
+		relaxes = []
+		for trNum in range(numTrackers):
+			for axis in ['x', 'y']:
+				relaxis = RelAxis()
+				relaxis.shapeNoise = 12
+				relaxis.cloudEnabled = 1
+				relaxis.supportMaxOffset = 39
+				relaxis.trainVarianceOffset = 41
+				relaxis.trainingData = self.trainingData
+				relaxes.append(relaxis)
+
+		#Second layer of hierarchy
+		for trNum in range(numTrackers):
+			for axis in ['x', 'y']:
+				relaxis = RelAxis()
+				relaxis.shapeNoise = 1
+				relaxis.cloudEnabled = 0
+				relaxis.supportMaxOffset = 20
+				relaxis.trainVarianceOffset = 5
+				relaxis.trainingData = self.trainingData
+				relaxes.append(relaxis)
+
+		
+		#Train individual axis predictors
+		for relaxis in relaxes:
+			relaxis.Train()
+
 
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
@@ -63,7 +106,8 @@ if __name__ == "__main__":
 		reltracker.Add(im, posData[ti])
 
 
-
+	reltracker.Train()
 	
+
 
 
