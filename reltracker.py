@@ -64,9 +64,10 @@ class RelTracker:
 		
 		assert(len(self.trainingData)>0)
 		numTrackers = len(self.trainingData[0][1])
+		scalePredictors = []
 
 		#First layer of hierarchy
-		relaxes = []
+		layer = []
 		for trNum in range(numTrackers):
 			for axis in ['x', 'y']:
 				relaxis = RelAxis()
@@ -75,9 +76,11 @@ class RelTracker:
 				relaxis.supportMaxOffset = 39
 				relaxis.trainVarianceOffset = 41
 				relaxis.trainingData = self.trainingData
-				relaxes.append(relaxis)
+				layer.append(relaxis)
+		scalePredictors.append(layer)
 
 		#Second layer of hierarchy
+		layer = []
 		for trNum in range(numTrackers):
 			for axis in ['x', 'y']:
 				relaxis = RelAxis()
@@ -86,12 +89,14 @@ class RelTracker:
 				relaxis.supportMaxOffset = 20
 				relaxis.trainVarianceOffset = 5
 				relaxis.trainingData = self.trainingData
-				relaxes.append(relaxis)
+				layer.append(relaxis)
+		scalePredictors.append(layer)
 
 		
 		#Train individual axis predictors
-		for relaxis in relaxes:
-			relaxis.Train()
+		for layer in scalePredictors:
+			for relaxis in layer:
+				relaxis.Train()
 
 
 if __name__ == "__main__":
