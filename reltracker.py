@@ -46,10 +46,16 @@ def ReadPosData(fina):
 
 class RelAxis:
 	def __init__(self):
-		pass
+		self.numSupportPix = 500
+		self.numTrainingOffsets = 5000
+		self.maxSupportOffset = 30
 
 	def Train(self):
-		print "Train"
+
+		self.supportPixOffset = np.random.uniform(-self.maxSupportOffset, 
+				self.maxSupportOffset, (self.numSupportPix, 2))
+
+
 
 class RelTracker:
 	def __init__(self):
@@ -71,10 +77,13 @@ class RelTracker:
 		for trNum in range(numTrackers):
 			for axis in ['x', 'y']:
 				relaxis = RelAxis()
+				relaxis.trackerNum = trNum
+				relaxis.axis = axis
 				relaxis.shapeNoise = 12
 				relaxis.cloudEnabled = 1
 				relaxis.supportMaxOffset = 39
 				relaxis.trainVarianceOffset = 41
+				relaxis.rotationVar = 0.1
 				relaxis.trainingData = self.trainingData
 				layer.append(relaxis)
 		scalePredictors.append(layer)
@@ -84,18 +93,21 @@ class RelTracker:
 		for trNum in range(numTrackers):
 			for axis in ['x', 'y']:
 				relaxis = RelAxis()
+				relaxis.trackerNum = trNum
+				relaxis.axis = axis
 				relaxis.shapeNoise = 1
 				relaxis.cloudEnabled = 0
 				relaxis.supportMaxOffset = 20
 				relaxis.trainVarianceOffset = 5
+				relaxis.rotationVar = 0.1
 				relaxis.trainingData = self.trainingData
 				layer.append(relaxis)
 		scalePredictors.append(layer)
-
 		
 		#Train individual axis predictors
-		for layer in scalePredictors:
+		for layerNum, layer in enumerate(scalePredictors):
 			for relaxis in layer:
+				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
 				relaxis.Train()
 
 
