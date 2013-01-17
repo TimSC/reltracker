@@ -238,7 +238,7 @@ if __name__ == "__main__":
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
 			print ti, imgFina
 			im = Image.open(imgFina)
-			if im.mode != "L": im = im.convert("L")
+			if im.mode != "RGB": im = im.convert("RGB")
 
 			reltracker.Add(im, posData[ti])
 
