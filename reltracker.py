@@ -119,26 +119,26 @@ class RelAxis:
 			for pixNum, col in enumerate(trainIntensity):
 				greyPix[rowNum, pixNum] = ToGrey(col)
 
-		print "Calc distances"
-
 		#Calculate relative position of other points in cloud
 		#Note: this implementation is not efficiant as the distances are
 		#repeatedly recalculated!
-		trainCloudPos = []
-		for frameNum in trainOnFrameNum:
-			cloudPosOnFrame = []
-			posOnFrame = self.trainingData[frameNum][1]
-			for trNum, pos in enumerate(posOnFrame):
-				if trNum == self.trackerNum:
-					continue #Skip distance to self
-				xdiff = pos[0] - posOnFrame[self.trackerNum][0]
-				ydiff = pos[1] - posOnFrame[self.trackerNum][1]
+		if self.cloudEnabled: 
+			print "Calc distances"
+			trainCloudPos = []
+			for frameNum in trainOnFrameNum:
+				cloudPosOnFrame = []
+				posOnFrame = self.trainingData[frameNum][1]
+				for trNum, pos in enumerate(posOnFrame):
+					if trNum == self.trackerNum:
+						continue #Skip distance to self
+					xdiff = pos[0] - posOnFrame[self.trackerNum][0]
+					ydiff = pos[1] - posOnFrame[self.trackerNum][1]
 
-				if self.axis == "x":
-					cloudPosOnFrame.append(xdiff)
-				else:
-					cloudPosOnFrame.append(ydiff)
-			trainCloudPos.append(cloudPosOnFrame)
+					if self.axis == "x":
+						cloudPosOnFrame.append(xdiff)
+					else:
+						cloudPosOnFrame.append(ydiff)
+				trainCloudPos.append(cloudPosOnFrame)
 
 		#Add noise to cloud positions
 		trainCloudPos = np.array(trainCloudPos)
@@ -150,8 +150,13 @@ class RelAxis:
 		else:
 			labels = trainOffsetsY
 	
+		#If selected, merge the cloud position data with pixel intensities
+		if self.cloudEnabled:
+			trainData = np.hstack((greyPix, trainCloudPos))
+		else:
+			trainData = greyPix
+
 		#Train regression model
-		trainData = np.hstack((greyPix, trainCloudPos))
 		self.reg = ensemble.GradientBoostingRegressor()
 		self.reg.fit(trainData, labels)
 
@@ -179,8 +184,12 @@ class RelAxis:
 			else:
 				cloudPosOnFrame.append(ydiff)
 
+		if self.cloudEnabled:
+			testData = np.concatenate((greyPix, cloudPosOnFrame))
+		else:
+			testData = greyPix
+
 		#Make prediction
-		testData = np.concatenate((greyPix, cloudPosOnFrame))
 		pred = self.reg.predict(testData)[0]
 
 		if self.axis == 'x': axisNum = 0
@@ -232,7 +241,6 @@ class RelTracker:
 				relaxis = RelAxis()
 				relaxis.trackerNum = trNum
 				relaxis.axis = axis
-				relaxis.shapeNoise = 1
 				relaxis.cloudEnabled = 0
 				relaxis.supportMaxOffset = 20
 				relaxis.trainVarianceOffset = 5
@@ -272,7 +280,7 @@ class RelTracker:
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
-	if 0:
+	if 1:
 		reltracker = RelTracker()
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
