@@ -247,7 +247,7 @@ if __name__ == "__main__":
 				break
 			print "frameNum", frameNum
 			im = Image.open(imgFina)
-			if im.mode != "L": im = im.convert("L")
+			if im.mode != "RGB": im = im.convert("RGB")
 
 			if frameNum in posData:
 				currentPos = posData[frameNum]
