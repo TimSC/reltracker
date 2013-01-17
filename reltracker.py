@@ -208,7 +208,7 @@ class RelTracker:
 
 				#For each axis predictor,
 				for axisNum, relaxis in enumerate(layer):
-					print "Predict", layerNum, relaxis.trackerNum, relaxis.axis
+					#print "Predict", layerNum, relaxis.trackerNum, relaxis.axis
 
 					#Make a prediction
 					currentPos = relaxis.Predict(im, currentPos)
@@ -251,7 +251,10 @@ if __name__ == "__main__":
 				currentPos = posData[frameNum]
 			elif currentPos is not None:
 				#Predict position on current frame
-				currentPos = reltracker.Predict(im, currentPos)
+				try:
+					currentPos = reltracker.Predict(im, currentPos)
+				except:
+					currentPos = None
 			
 			#Visualise tracking
 			iml = im.load()
