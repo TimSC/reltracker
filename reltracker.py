@@ -119,6 +119,8 @@ class RelAxis:
 			for pixNum, col in enumerate(trainIntensity):
 				greyPix[rowNum, pixNum] = ToGrey(col)
 
+		print "Calc distances"
+
 		#Calculate relative position of other points in cloud
 		#Note: this implementation is not efficiant as the distances are
 		#repeatedly recalculated!
@@ -138,12 +140,16 @@ class RelAxis:
 					cloudPosOnFrame.append(ydiff)
 			trainCloudPos.append(cloudPosOnFrame)
 
+		#Add noise to cloud positions
+		trainCloudPos = np.array(trainCloudPos)
+		trainCloudPos = trainCloudPos + np.random.randn(*trainCloudPos.shape) * self.shapeNoise
+
 		#Select axis labels
 		if self.axis == "x":
 			labels = trainOffsetsX
 		else:
 			labels = trainOffsetsY
-
+	
 		#Train regression model
 		trainData = np.hstack((greyPix, trainCloudPos))
 		self.reg = ensemble.GradientBoostingRegressor()
@@ -165,8 +171,8 @@ class RelAxis:
 		for trNum, trPos in enumerate(pos):
 			if trNum == self.trackerNum:
 				continue #Skip distance to self
-			xdiff = trPos[0] - posOnFrame[self.trackerNum][0]
-			ydiff = trPos[1] - posOnFrame[self.trackerNum][1]
+			xdiff = trPos[0] - pos[self.trackerNum][0]
+			ydiff = trPos[1] - pos[self.trackerNum][1]
 
 			if self.axis == "x":
 				cloudPosOnFrame.append(xdiff)
@@ -266,7 +272,7 @@ class RelTracker:
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
-	if 1:
+	if 0:
 		reltracker = RelTracker()
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
