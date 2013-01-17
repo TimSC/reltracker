@@ -11,10 +11,16 @@ def BilinearSample(imgPix, x, y):
 	yfrac, yi = math.modf(y)
 
 	#Get surrounding pixels
-	p00 = [imgPix[xi,yi]]
-	p10 = [imgPix[xi+1,yi]]
-	p01 = [imgPix[xi,yi+1]]
-	p11 = [imgPix[xi+1,yi+1]]
+	p00 = imgPix[xi,yi]
+	p10 = imgPix[xi+1,yi]
+	p01 = imgPix[xi,yi+1]
+	p11 = imgPix[xi+1,yi+1]
+
+	#If a single number has been returned, convert to list
+	if not hasattr(p00, '__iter__'): p00 = [p00]
+	if not hasattr(p10, '__iter__'): p00 = [p10]
+	if not hasattr(p01, '__iter__'): p00 = [p01]
+	if not hasattr(p11, '__iter__'): p00 = [p11]
 
 	#Interpolate colour
 	c1 = [p00c * (1.-xfrac) + p10c * xfrac for p00c, p10c in zip(p00, p10)]
@@ -105,7 +111,11 @@ class RelAxis:
 		greyPix = np.empty((numValidTraining, self.numSupportPix))
 		for rowNum, trainIntensity in enumerate(trainPix):
 			for pixNum, col in enumerate(trainIntensity):
-				greyPix[rowNum, pixNum] = col[0]
+				if len(col) == 3:
+					greyPix[rowNum, pixNum] = ITUR6012(col)
+				else:
+					#Assumed to be already grey scale
+					greyPix[rowNum, pixNum] = col[0]
 
 		#Select axis labels
 		if self.axis == "x":
@@ -126,7 +136,10 @@ class RelAxis:
 		#Convert to grey scale
 		greyPix = []
 		for col in pix:
-			greyPix.append(col[0])
+			if len(col) == 3:
+				greyPix[rowNum, pixNum] = ITUR6012(col)
+			else:
+				greyPix.append(col[0])
 
 		#Make prediction
 		pred = self.reg.predict(greyPix)[0]
