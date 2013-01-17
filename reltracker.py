@@ -64,6 +64,12 @@ def GetPixIntensityAtLoc(iml, supportOffsets, loc, rotation = 0.):
 			return None
 	return out
 
+def ToGrey(col):
+	if len(col) == 3:
+		return ITUR6012(col)
+	#Assumed to be already grey scale
+	return col[0]
+
 #*******************************************************************************
 
 class RelAxis:
@@ -111,11 +117,7 @@ class RelAxis:
 		greyPix = np.empty((numValidTraining, self.numSupportPix))
 		for rowNum, trainIntensity in enumerate(trainPix):
 			for pixNum, col in enumerate(trainIntensity):
-				if len(col) == 3:
-					greyPix[rowNum, pixNum] = ITUR6012(col)
-				else:
-					#Assumed to be already grey scale
-					greyPix[rowNum, pixNum] = col[0]
+				greyPix[rowNum, pixNum] = ToGrey(col[0])
 
 		#Select axis labels
 		if self.axis == "x":
@@ -136,10 +138,7 @@ class RelAxis:
 		#Convert to grey scale
 		greyPix = []
 		for col in pix:
-			if len(col) == 3:
-				greyPix.append(ITUR6012(col))
-			else:
-				greyPix.append(col[0])
+			greyPix.append(ToGrey(col))
 
 		#Make prediction
 		pred = self.reg.predict(greyPix)[0]
