@@ -140,9 +140,9 @@ class RelAxis:
 						cloudPosOnFrame.append(ydiff)
 				trainCloudPos.append(cloudPosOnFrame)
 
-		#Add noise to cloud positions
-		trainCloudPos = np.array(trainCloudPos)
-		trainCloudPos = trainCloudPos + np.random.randn(*trainCloudPos.shape) * self.shapeNoise
+			#Add noise to cloud positions
+			trainCloudPos = np.array(trainCloudPos)
+			trainCloudPos = trainCloudPos + np.random.randn(*trainCloudPos.shape) * self.shapeNoise
 
 		#Select axis labels
 		if self.axis == "x":
@@ -280,7 +280,7 @@ class RelTracker:
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
-	if 1:
+	if 0:
 		reltracker = RelTracker()
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
