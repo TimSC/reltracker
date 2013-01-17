@@ -4,6 +4,8 @@ import time, math, pickle, sys
 import numpy as np
 import sklearn.ensemble as ensemble
 
+#******* Utility functions
+
 def BilinearSample(imgPix, x, y):
 	xfrac, xi = math.modf(x)
 	yfrac, yi = math.modf(y)
@@ -90,13 +92,14 @@ class RelAxis:
 
 				pix = GetPixIntensityAtLoc(iml, self.supportPixOffset, offset)
 				if pix is None:
-					print offset
+					#Pixel is outside of image: discard this training offset
 					continue
 				trainPix.append(pix)
 				trainOffsetsX.append(trainOffset[0])
 				trainOffsetsY.append(trainOffset[1])
 			print len(trainPix)
 		numValidTraining = len(trainPix)
+		assert numValidTraining > 0
 
 		#Convert to grey scale, numpy array
 		greyPix = np.empty((numValidTraining, self.numSupportPix))
@@ -117,6 +120,7 @@ class RelAxis:
 	def Predict(self, im, pos):
 		pass
 
+#****************************************************
 
 class RelTracker:
 	def __init__(self):
@@ -170,24 +174,30 @@ class RelTracker:
 			for relaxis in layer:
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
 				relaxis.Train()
-				relaxis.trainingData = None
+				relaxis.trainingData = None #Remove data that cannot be pickled
 
-		pickle.dump(scalePredictors, open("tracker.dat","w"), protocol = -1)
+	def Predict(self, im, pos):
+		pass
+		
+#************************************************************
 
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
-	reltracker = RelTracker()
-	for ti in posData:
-		imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
-		print ti, imgFina
-		im = Image.open(imgFina)
+	if 1:
+		reltracker = RelTracker()
+		for ti in posData:
+			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
+			print ti, imgFina
+			im = Image.open(imgFina)
 
-		reltracker.Add(im, posData[ti])
+			reltracker.Add(im, posData[ti])
 
 
-	reltracker.Train()
+		reltracker.Train()
+		reltracker.trainingData = None #Remove data that cannot be pickled
+
+		pickle.dump(reltracker, open("tracker.dat","wb"), protocol = -1)
+
 	
-
-
 
