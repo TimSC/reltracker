@@ -65,6 +65,7 @@ def GetPixIntensityAtLoc(iml, supportOffsets, loc, rotation = 0.):
 	return out
 
 def ToGrey(col):
+	if not hasattr(col, '__iter__'): return col
 	if len(col) == 3:
 		return ITUR6012(col)
 	#Assumed to be already grey scale
@@ -75,7 +76,7 @@ def ToGrey(col):
 class RelAxis:
 	def __init__(self):
 		self.numSupportPix = 500
-		self.numTrainingOffsets = 5000
+		self.numTrainingOffsets = 500 #5000
 		self.maxSupportOffset = 30
 		self.reg = None
 		self.trainingData = None
@@ -86,14 +87,12 @@ class RelAxis:
 		self.supportPixOffset = np.random.uniform(-self.maxSupportOffset, 
 				self.maxSupportOffset, (self.numSupportPix, 2))
 
-		#Create pixel access objects
-		trainImgPix = [train[0].load() for train in self.trainingData]
-
 		#Get pixel intensities at training offsets
 		trainPix = []
 		trainOffsetsX = []
 		trainOffsetsY = []
-		for im, pos in self.trainingData:
+		trainOnFrameNum = []
+		for frameNum, (im, pos) in enumerate(self.trainingData):
 			trPos = pos[self.trackerNum]
 			iml = im.load()
 
@@ -109,6 +108,7 @@ class RelAxis:
 				trainPix.append(pix)
 				trainOffsetsX.append(trainOffset[0])
 				trainOffsetsY.append(trainOffset[1])
+				trainOnFrameNum.append(frameNum)
 			print len(trainPix)
 		numValidTraining = len(trainPix)
 		assert numValidTraining > 0
@@ -117,7 +117,26 @@ class RelAxis:
 		greyPix = np.empty((numValidTraining, self.numSupportPix))
 		for rowNum, trainIntensity in enumerate(trainPix):
 			for pixNum, col in enumerate(trainIntensity):
-				greyPix[rowNum, pixNum] = ToGrey(col[0])
+				greyPix[rowNum, pixNum] = ToGrey(col)
+
+		#Calculate relative position of other points in cloud
+		#Note: this implementation is not efficiant as the distances are
+		#repeatedly recalculated!
+		trainCloudPos = []
+		for frameNum in trainOnFrameNum:
+			cloudPosOnFrame = []
+			posOnFrame = self.trainingData[frameNum][1]
+			for trNum, pos in enumerate(posOnFrame):
+				if trNum == self.trackerNum:
+					continue #Skip distance to self
+				xdiff = pos[0] - posOnFrame[self.trackerNum][0]
+				ydiff = pos[1] - posOnFrame[self.trackerNum][1]
+
+				if self.axis == "x":
+					cloudPosOnFrame.append(xdiff)
+				else:
+					cloudPosOnFrame.append(ydiff)
+			trainCloudPos.append(cloudPosOnFrame)
 
 		#Select axis labels
 		if self.axis == "x":
@@ -232,7 +251,7 @@ class RelTracker:
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
-	if 0:
+	if 1:
 		reltracker = RelTracker()
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
