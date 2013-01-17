@@ -76,7 +76,7 @@ def ToGrey(col):
 class RelAxis:
 	def __init__(self):
 		self.numSupportPix = 500
-		self.numTrainingOffsets = 500 #5000
+		self.numTrainingOffsets = 5000
 		self.maxSupportOffset = 30
 		self.reg = None
 		self.trainingData = None
@@ -145,8 +145,9 @@ class RelAxis:
 			labels = trainOffsetsY
 
 		#Train regression model
+		trainData = np.hstack((greyPix, trainCloudPos))
 		self.reg = ensemble.GradientBoostingRegressor()
-		self.reg.fit(greyPix, labels)
+		self.reg.fit(trainData, labels)
 
 	def Predict(self, im, pos):
 		currentPos = copy.deepcopy(pos)
@@ -159,8 +160,22 @@ class RelAxis:
 		for col in pix:
 			greyPix.append(ToGrey(col))
 
+		#Calculate relative distances to cloud
+		cloudPosOnFrame = []
+		for trNum, trPos in enumerate(pos):
+			if trNum == self.trackerNum:
+				continue #Skip distance to self
+			xdiff = trPos[0] - posOnFrame[self.trackerNum][0]
+			ydiff = trPos[1] - posOnFrame[self.trackerNum][1]
+
+			if self.axis == "x":
+				cloudPosOnFrame.append(xdiff)
+			else:
+				cloudPosOnFrame.append(ydiff)
+
 		#Make prediction
-		pred = self.reg.predict(greyPix)[0]
+		testData = np.concatenate((greyPix, cloudPosOnFrame))
+		pred = self.reg.predict(testData)[0]
 
 		if self.axis == 'x': axisNum = 0
 		else: axisNum = 1
