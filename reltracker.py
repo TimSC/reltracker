@@ -258,10 +258,11 @@ if __name__ == "__main__":
 			
 			#Visualise tracking
 			iml = im.load()
-			for pos in currentPos:
-				for i in [-1,0,+1]:
-					for j in [-1,0,+1]:
-						iml[pos[0]+i,pos[1]+j] = (255,255,255)
+			if currentPos is not None: 
+				for pos in currentPos:
+					for i in [-1,0,+1]:
+						for j in [-1,0,+1]:
+							iml[pos[0]+i,pos[1]+j] = (255,255,255)
 			im.save("{0:05d}.jpg".format(frameNum))
 	
 			#Go to next frame
