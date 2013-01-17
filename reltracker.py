@@ -42,6 +42,20 @@ def ReadPosData(fina):
 		pos += 2 + numPts
 	return out
 
+def GetPixIntensityAtLoc(iml, supportOffsets, loc, rotation = 0.):
+	out = []
+	for offset in supportOffsets:
+		#Apply rotation (anti-clockwise)
+		rx = math.cos(rotation) * offset[0] - math.sin(rotation) * offset[1]
+		ry = math.sin(rotation) * offset[0] + math.cos(rotation) * offset[1]
+
+		#Get pixel at this location
+		try:
+			out.append(BilinearSample(iml, rx + loc[0], ry + loc[1]))
+		except IndexError:
+			return None
+	return out
+
 #*******************************************************************************
 
 class RelAxis:
@@ -49,12 +63,59 @@ class RelAxis:
 		self.numSupportPix = 500
 		self.numTrainingOffsets = 5000
 		self.maxSupportOffset = 30
+		self.reg = None
+		self.trainingData = None
 
 	def Train(self):
 
+		#Generate support pix and training offsets
 		self.supportPixOffset = np.random.uniform(-self.maxSupportOffset, 
 				self.maxSupportOffset, (self.numSupportPix, 2))
 
+		#Create pixel access objects
+		trainImgPix = [train[0].load() for train in self.trainingData]
+
+		#Get pixel intensities at training offsets
+		trainPix = []
+		trainOffsetsX = []
+		trainOffsetsY = []
+		for im, pos in self.trainingData:
+			trPos = pos[self.trackerNum]
+			iml = im.load()
+
+			for train in range(self.numTrainingOffsets/len(self.trainingData)):
+				trainOffset = np.random.randn(2) * self.trainVarianceOffset
+
+				offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
+
+				pix = GetPixIntensityAtLoc(iml, self.supportPixOffset, offset)
+				if pix is None:
+					print offset
+					continue
+				trainPix.append(pix)
+				trainOffsetsX.append(trainOffset[0])
+				trainOffsetsY.append(trainOffset[1])
+			print len(trainPix)
+		numValidTraining = len(trainPix)
+
+		#Convert to grey scale, numpy array
+		greyPix = np.empty((numValidTraining, self.numSupportPix))
+		for rowNum, trainIntensity in enumerate(trainPix):
+			for pixNum, col in enumerate(trainIntensity):
+				greyPix[rowNum, pixNum] = ITUR6012(col)
+
+		#Select axis labels
+		if self.axis == "x":
+			labels = trainOffsetsX
+		else:
+			labels = trainOffsetsY
+
+		#Train regression model
+		self.reg = ensemble.GradientBoostingRegressor()
+		self.reg.fit(greyPix, labels)
+
+	def Predict(self, im, pos):
+		pass
 
 
 class RelTracker:
@@ -109,7 +170,9 @@ class RelTracker:
 			for relaxis in layer:
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
 				relaxis.Train()
+				relaxis.trainingData = None
 
+		pickle.dump(scalePredictors, open("tracker.dat","w"), protocol = -1)
 
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
