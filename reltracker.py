@@ -1,6 +1,6 @@
 
 from PIL import Image
-import time, math, pickle, sys, os
+import time, math, pickle, sys, os, copy
 import numpy as np
 import sklearn.ensemble as ensemble
 
@@ -118,17 +118,26 @@ class RelAxis:
 		self.reg.fit(greyPix, labels)
 
 	def Predict(self, im, pos):
-		pix = GetPixIntensityAtLoc(im.load(), self.supportPixOffset, pos[self.trackerNum])
+		currentPos = copy.deepcopy(pos)
+		pix = GetPixIntensityAtLoc(im.load(), self.supportPixOffset, currentPos[self.trackerNum])
 		if pix is None:
 			raise Exception("Pixel intensities could not be determined")
 
+		#Convert to grey scale
 		greyPix = []
 		for col in pix:
 			greyPix.append(ITUR6012(col))
 
-		pred = self.reg.predict(greyPix)
+		#Make prediction
+		pred = self.reg.predict(greyPix)[0]
 
-		print pred
+		if self.axis == 'x': axisNum = 0
+		else: axisNum = 1
+
+		#Adjust position
+		currentPos[self.trackerNum][axisNum] -= pred
+
+		return currentPos
 
 #****************************************************
 
@@ -188,7 +197,7 @@ class RelTracker:
 				relaxis.trainingData = None #Remove data that cannot be pickled
 
 	def Predict(self, im, pos):
-		assert len(pos) == len(self.scalePredictors[0])
+		assert len(pos) == len(self.scalePredictors[0]) / 2
 		currentPos = copy.deepcopy(pos)
 		
 		#For each layer in the hierarchy,
@@ -203,13 +212,15 @@ class RelTracker:
 
 					#Make a prediction
 					currentPos = relaxis.Predict(im, currentPos)
+
+		return currentPos
 		
 #************************************************************
 
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
-	if 1:
+	if 0:
 		reltracker = RelTracker()
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
@@ -224,7 +235,7 @@ if __name__ == "__main__":
 
 		pickle.dump(reltracker, open("tracker.dat","wb"), protocol = -1)
 
-	if 0:
+	if 1:
 		reltracker = pickle.load(open("tracker.dat","rb"))
 
 		frameNum = 0
@@ -239,11 +250,20 @@ if __name__ == "__main__":
 			if frameNum in posData:
 				currentPos = posData[frameNum]
 			elif currentPos is not None:
+				#Predict position on current frame
 				currentPos = reltracker.Predict(im, currentPos)
-				
 			
+			#Visualise tracking
+			iml = im.load()
+			for pos in currentPos:
+				for i in [-1,0,+1]:
+					for j in [-1,0,+1]:
+						iml[pos[0]+i,pos[1]+j] = (255,255,255)
+			im.save("{0:05d}.jpg".format(frameNum))
+	
+			#Go to next frame
+			frameNum += 1
 
-
-
+			
 
 
