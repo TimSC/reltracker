@@ -137,7 +137,7 @@ class RelAxis:
 		greyPix = []
 		for col in pix:
 			if len(col) == 3:
-				greyPix[rowNum, pixNum] = ITUR6012(col)
+				greyPix.append(ITUR6012(col))
 			else:
 				greyPix.append(col[0])
 
@@ -268,7 +268,8 @@ if __name__ == "__main__":
 				#Predict position on current frame
 				try:
 					currentPos = reltracker.Predict(im, currentPos)
-				except:
+				except Exception as err:
+					print err
 					currentPos = None
 			
 			#Visualise tracking
