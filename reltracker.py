@@ -1,6 +1,6 @@
 
 from PIL import Image
-import time, math, pickle, sys
+import time, math, pickle, sys, os
 import numpy as np
 import sklearn.ensemble as ensemble
 
@@ -118,13 +118,24 @@ class RelAxis:
 		self.reg.fit(greyPix, labels)
 
 	def Predict(self, im, pos):
-		pass
+		pix = GetPixIntensityAtLoc(im.load(), self.supportPixOffset, pos[self.trackerNum])
+		if pix is None:
+			raise Exception("Pixel intensities could not be determined")
+
+		greyPix = []
+		for col in pix:
+			greyPix.append(ITUR6012(col))
+
+		pred = self.reg.predict(greyPix)
+
+		print pred
 
 #****************************************************
 
 class RelTracker:
 	def __init__(self):
 		self.trainingData = []
+		self.numIterations = 5
 
 	def Add(self, im, pos):
 		self.trainingData.append((im, pos))
@@ -135,7 +146,7 @@ class RelTracker:
 		
 		assert(len(self.trainingData)>0)
 		numTrackers = len(self.trainingData[0][1])
-		scalePredictors = []
+		self.scalePredictors = []
 
 		#First layer of hierarchy
 		layer = []
@@ -151,7 +162,7 @@ class RelTracker:
 				relaxis.rotationVar = 0.1
 				relaxis.trainingData = self.trainingData
 				layer.append(relaxis)
-		scalePredictors.append(layer)
+		self.scalePredictors.append(layer)
 
 		#Second layer of hierarchy
 		layer = []
@@ -167,17 +178,31 @@ class RelTracker:
 				relaxis.rotationVar = 0.1
 				relaxis.trainingData = self.trainingData
 				layer.append(relaxis)
-		scalePredictors.append(layer)
+		self.scalePredictors.append(layer)
 		
 		#Train individual axis predictors
-		for layerNum, layer in enumerate(scalePredictors):
+		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
 				relaxis.Train()
 				relaxis.trainingData = None #Remove data that cannot be pickled
 
 	def Predict(self, im, pos):
-		pass
+		assert len(pos) == len(self.scalePredictors[0])
+		currentPos = copy.deepcopy(pos)
+		
+		#For each layer in the hierarchy,
+		for layerNum, layer in enumerate(self.scalePredictors): 
+
+			#For a specified number of iterations,
+			for iterNum in range(self.numIterations):
+
+				#For each axis predictor,
+				for axisNum, relaxis in enumerate(layer):
+					print "Predict", layerNum, relaxis.trackerNum, relaxis.axis
+
+					#Make a prediction
+					currentPos = relaxis.Predict(im, currentPos)
 		
 #************************************************************
 
@@ -199,5 +224,26 @@ if __name__ == "__main__":
 
 		pickle.dump(reltracker, open("tracker.dat","wb"), protocol = -1)
 
-	
+	if 0:
+		reltracker = pickle.load(open("tracker.dat","rb"))
+
+		frameNum = 0
+		currentPos = None
+		while 1:
+			imgFina = sys.argv[2]+"/{0:05d}.png".format(frameNum)
+			if not os.path.exists(imgFina):
+				break
+			print "frameNum", frameNum
+			im = Image.open(imgFina)
+
+			if frameNum in posData:
+				currentPos = posData[frameNum]
+			elif currentPos is not None:
+				currentPos = reltracker.Predict(im, currentPos)
+				
+			
+
+
+
+
 
