@@ -11,10 +11,10 @@ def BilinearSample(imgPix, x, y):
 	yfrac, yi = math.modf(y)
 
 	#Get surrounding pixels
-	p00 = imgPix[xi,yi]
-	p10 = imgPix[xi+1,yi]
-	p01 = imgPix[xi,yi+1]
-	p11 = imgPix[xi+1,yi+1]
+	p00 = [imgPix[xi,yi]]
+	p10 = [imgPix[xi+1,yi]]
+	p01 = [imgPix[xi,yi+1]]
+	p11 = [imgPix[xi+1,yi+1]]
 
 	#Interpolate colour
 	c1 = [p00c * (1.-xfrac) + p10c * xfrac for p00c, p10c in zip(p00, p10)]
@@ -105,7 +105,7 @@ class RelAxis:
 		greyPix = np.empty((numValidTraining, self.numSupportPix))
 		for rowNum, trainIntensity in enumerate(trainPix):
 			for pixNum, col in enumerate(trainIntensity):
-				greyPix[rowNum, pixNum] = ITUR6012(col)
+				greyPix[rowNum, pixNum] = col[0]
 
 		#Select axis labels
 		if self.axis == "x":
@@ -126,7 +126,7 @@ class RelAxis:
 		#Convert to grey scale
 		greyPix = []
 		for col in pix:
-			greyPix.append(ITUR6012(col))
+			greyPix.append(col[0])
 
 		#Make prediction
 		pred = self.reg.predict(greyPix)[0]
@@ -226,6 +226,7 @@ if __name__ == "__main__":
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
 			print ti, imgFina
 			im = Image.open(imgFina)
+			if im.mode != "L": im = im.convert("L")
 
 			reltracker.Add(im, posData[ti])
 
@@ -246,7 +247,7 @@ if __name__ == "__main__":
 				break
 			print "frameNum", frameNum
 			im = Image.open(imgFina)
-			if im.mode != "RGB": im = im.convert("RGB")
+			if im.mode != "L": im = im.convert("L")
 
 			if frameNum in posData:
 				currentPos = posData[frameNum]
@@ -263,7 +264,9 @@ if __name__ == "__main__":
 				for pos in currentPos:
 					for i in [-1,0,+1]:
 						for j in [-1,0,+1]:
-							iml[pos[0]+i,pos[1]+j] = (255,255,255)
+							col = (255,255,255)
+							if len(im.mode)==1: col = 255
+							iml[int(round(pos[0]+i)),int(round(pos[1]+j))] = col
 			im.save("{0:05d}.jpg".format(frameNum))
 	
 			#Go to next frame
