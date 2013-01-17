@@ -2,6 +2,7 @@ reltracker
 ==========
 
 Implementation of "Non-linear Predictors for Facial feature Tracking across Pose and Expression"
+
 Copyright (C) 2013 Tim Sheerman-Chase
 
 This program is free software; you can redistribute it and/or
