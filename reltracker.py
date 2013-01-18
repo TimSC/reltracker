@@ -98,7 +98,7 @@ class RelAxis:
 		"""
 		self.trainingData.append((im, pos))
 
-	def ClearTraining():
+	def ClearTraining(self):
 		"""
 		Clear training data from this object. This should allow the object
 		to be pickled.
@@ -286,7 +286,7 @@ class RelTracker:
 		self.trainingData.append((im, pos))
 		assert(len(self.trainingData[0][1]) == len(self.trainingData[-1][1]))
 
-	def ClearTraining():
+	def ClearTraining(self):
 		"""
 		Clear training data from this object. This should allow the object
 		to be pickled.
