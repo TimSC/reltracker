@@ -84,8 +84,26 @@ class RelAxis:
 		self.numTrainingOffsets = 5000
 		self.maxSupportOffset = 30
 		self.reg = None
-		self.trainingData = None
+		self.trainingData = []
 		self.verbose = 1
+		self.shapeNoise = 12
+		self.cloudEnabled = 1
+		self.trainVarianceOffset = 41
+		self.rotationVar = 0.1
+
+	def Add(self, im, pos):
+		"""
+		Add an annotated frame with a set of tracker positions for later 
+		training of the regression model.
+		"""
+		self.trainingData.append((im, pos))
+
+	def ClearTraining():
+		"""
+		Clear training data from this object. This should allow the object
+		to be pickled.
+		"""
+		self.trainingData = []
 
 	def Train(self):
 		"""
@@ -240,6 +258,7 @@ class RelTracker:
 	def __init__(self):
 		self.trainingData = []
 		self.numIterations = 5
+		self.scalePredictors = None
 
 	def Add(self, im, pos):
 		"""
@@ -252,6 +271,15 @@ class RelTracker:
 		self.trainingData.append((im, pos))
 		assert(len(self.trainingData[0][1]) == len(self.trainingData[-1][1]))
 
+	def ClearTraining():
+		"""
+		Clear training data from this object. This should allow the object
+		to be pickled.
+		"""
+		self.trainingData = []
+		for layerNum, layer in enumerate(self.scalePredictors):
+			for relaxis in layer:
+				relaxis.ClearTraining()
 
 	def Train(self):
 		"""
@@ -277,7 +305,8 @@ class RelTracker:
 				relaxis.supportMaxOffset = 39
 				relaxis.trainVarianceOffset = 41
 				relaxis.rotationVar = 0.1
-				relaxis.trainingData = self.trainingData
+				for td in self.trainingData:
+					relaxis.Add(td)
 				layer.append(relaxis)
 		self.scalePredictors.append(layer)
 
@@ -292,7 +321,8 @@ class RelTracker:
 				relaxis.supportMaxOffset = 20
 				relaxis.trainVarianceOffset = 5
 				relaxis.rotationVar = 0.1
-				relaxis.trainingData = self.trainingData
+				for td in self.trainingData:
+					relaxis.Add(td)
 				layer.append(relaxis)
 		self.scalePredictors.append(layer)
 		
@@ -301,7 +331,6 @@ class RelTracker:
 			for relaxis in layer:
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
 				relaxis.Train()
-				relaxis.trainingData = None #Remove data that cannot be pickled
 
 	def Predict(self, im, pos):
 		"""
@@ -309,6 +338,7 @@ class RelTracker:
 		resulting prediction is for all tracking points.
 		"""
 
+		assert self.scalePredictors is not None #Train the model first!
 		assert len(pos) == len(self.scalePredictors[0]) / 2
 		if im.mode != "RGB" and im.mode != "L": 
 			im = im.convert("RGB")
@@ -353,7 +383,7 @@ if __name__ == "__main__":
 
 		#Train the tracker
 		reltracker.Train()
-		reltracker.trainingData = None #Remove data that cannot be pickled
+		reltracker.ClearTraining() #Remove data that cannot be pickled
 
 		pickle.dump(reltracker, open("tracker.dat","wb"), protocol = -1)
 
