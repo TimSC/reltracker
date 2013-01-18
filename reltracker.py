@@ -257,6 +257,10 @@ class RelAxis:
 		currentPos[self.trackerNum][axisNum] -= pred
 
 		return currentPos
+	
+	def TrainingComplete(self):
+		if self.reg is not None: return True
+		return False
 
 #****************************************************
 
@@ -315,52 +319,61 @@ class RelTracker:
 		considers multiple tracking points in 2D tracking (as in 2 axis are
 		used for each tracking point.)
 		"""
-
 		assert(len(self.trainingData)>0)
+		while self.GetProgress() < 1.:
+			self.ProgressTraining()
+
+	def ProgressTraining(self):
 
 		numTrackers = len(self.trainingData[0][1])
-		self.scalePredictors = []
+		
+		if self.scalePredictors is None:
+			self.scalePredictors = []
 
-		#First layer of hierarchy
-		layer = []
-		for trNum in range(numTrackers):
-			for axis in ['x', 'y']:
-				relaxis = RelAxis()
-				relaxis.trackerNum = trNum
-				relaxis.axis = axis
-				relaxis.shapeNoise = 12
-				relaxis.cloudEnabled = 1
-				relaxis.supportMaxOffset = 39
-				relaxis.trainVarianceOffset = 41
-				relaxis.rotationVar = 0.1
-				for td in self.trainingData:
-					relaxis.Add(*td)
-				layer.append(relaxis)
-		self.scalePredictors.append(layer)
+			#First layer of hierarchy
+			layer = []
+			for trNum in range(numTrackers):
+				for axis in ['x', 'y']:
+					relaxis = RelAxis()
+					relaxis.trackerNum = trNum
+					relaxis.axis = axis
+					relaxis.shapeNoise = 12
+					relaxis.cloudEnabled = 1
+					relaxis.supportMaxOffset = 39
+					relaxis.trainVarianceOffset = 41
+					relaxis.rotationVar = 0.1
+					for td in self.trainingData:
+						relaxis.Add(*td)
+					layer.append(relaxis)
+			self.scalePredictors.append(layer)
 
-		#Second layer of hierarchy
-		layer = []
-		for trNum in range(numTrackers):
-			for axis in ['x', 'y']:
-				relaxis = RelAxis()
-				relaxis.trackerNum = trNum
-				relaxis.axis = axis
-				relaxis.cloudEnabled = 0
-				relaxis.supportMaxOffset = 20
-				relaxis.trainVarianceOffset = 5
-				relaxis.rotationVar = 0.1
-				for td in self.trainingData:
-					relaxis.Add(*td)
-				layer.append(relaxis)
-		self.scalePredictors.append(layer)
+			#Second layer of hierarchy
+			layer = []
+			for trNum in range(numTrackers):
+				for axis in ['x', 'y']:
+					relaxis = RelAxis()
+					relaxis.trackerNum = trNum
+					relaxis.axis = axis
+					relaxis.cloudEnabled = 0
+					relaxis.supportMaxOffset = 20
+					relaxis.trainVarianceOffset = 5
+					relaxis.rotationVar = 0.1
+					for td in self.trainingData:
+						relaxis.Add(*td)
+					layer.append(relaxis)
+			self.scalePredictors.append(layer)
+			return
 		
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
+				if relaxis.TrainingComplete(): continue #Skip completed trackers
+
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
 				sys.stdout.flush()
 				relaxis.Train()
-
+				return
+				
 	def Predict(self, im, pos):
 		"""
 		Request predictions based on a specified image and tracker position arrangement. The
@@ -404,11 +417,21 @@ class RelTracker:
 		self.serialTraining = None
 
 	def GetProgress(self):
-		if self.scalePredictors is not None: return 1
-		return 0
+
+		if self.scalePredictors is None:
+			return 0.
+		countDone = 1 #Counting the scale predictor initialisation as a valid step
+		countTotal = 1
+		for layerNum, layer in enumerate(self.scalePredictors):
+			for relaxis in layer:
+				countDone += relaxis.TrainingComplete()
+				countTotal += 1
+		return float(countDone) / countTotal
 		
 	def Update(self):
-		self.Train()
+		if self.GetProgress() >= 1.:
+			return
+		self.ProgressTraining()
 
 #************************************************************
 
