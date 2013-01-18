@@ -138,7 +138,7 @@ class RelAxis:
 
 					#Rotate training offset vector
 					offsetRX = math.cos(rotation) * offsetX - math.sin(rotation) * offsetY
-					offsetRy = math.sin(rotation) * offsetX + math.cos(rotation) * offsetY
+					offsetRY = math.sin(rotation) * offsetX + math.cos(rotation) * offsetY
 
 					#Calculate unrotated diff vector to cloud position
 					diffX = pos[0] - (posOnFrame[self.trackerNum][0])
