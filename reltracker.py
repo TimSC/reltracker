@@ -255,6 +255,17 @@ class RelAxis:
 #****************************************************
 
 class RelTracker:
+	"""
+	An implementation of "Non-linear Predictors for Facial feature Tracking 
+	across Pose and Expression". This class contains multiple regression
+	models for prediction tracking on video frames. 
+
+	1) Add some annotated frames using Add()
+	2) Train a model by Train()
+	3) Predict new positions by using Predict()
+
+	"""
+
 	def __init__(self):
 		self.trainingData = []
 		self.numIterations = 5
