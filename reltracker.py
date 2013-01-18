@@ -283,6 +283,10 @@ class RelTracker:
 #************************************************************
 
 if __name__ == "__main__":
+	if len(sys.argv) < 3:
+		print "Usage:",sys.argv[0],"markedPositions.dat /path/to/images"
+		exit(0)
+
 	posData = ReadPosData(sys.argv[1])
 
 	if 1:
