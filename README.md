@@ -1,7 +1,9 @@
 reltracker
 ==========
 
-Implementation of "Non-linear Predictors for Facial feature Tracking across Pose and Expression"
+Implementation of: Tim Sheerman-Chase, Eng-Jon Ong, Richard Bowden. Non-linear Predictors 
+for Facial feature Tracking across Pose and Expression. In IEEE 
+Conference on Automatic Face and Gesture Recognition, Shanghai, 2013.
 
 Copyright (C) 2013 Tim Sheerman-Chase
 

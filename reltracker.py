@@ -268,6 +268,12 @@ class RelTracker:
 	2) Train a model by Train()
 	3) Predict new positions by using Predict()
 
+	If used for scientific purposes, please cite:
+
+	Tim Sheerman-Chase, Eng-Jon Ong, Richard Bowden. Non-linear Predictors 
+	for Facial feature Tracking across Pose and Expression. In IEEE 
+	Conference on Automatic Face and Gesture Recognition, Shanghai, 2013.
+
 	"""
 
 	def __init__(self):
