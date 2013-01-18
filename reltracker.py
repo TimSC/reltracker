@@ -306,7 +306,7 @@ class RelTracker:
 				relaxis.trainVarianceOffset = 41
 				relaxis.rotationVar = 0.1
 				for td in self.trainingData:
-					relaxis.Add(td)
+					relaxis.Add(*td)
 				layer.append(relaxis)
 		self.scalePredictors.append(layer)
 
@@ -322,7 +322,7 @@ class RelTracker:
 				relaxis.trainVarianceOffset = 5
 				relaxis.rotationVar = 0.1
 				for td in self.trainingData:
-					relaxis.Add(td)
+					relaxis.Add(*td)
 				layer.append(relaxis)
 		self.scalePredictors.append(layer)
 		
