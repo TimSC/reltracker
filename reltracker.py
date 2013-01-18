@@ -125,14 +125,14 @@ class RelAxis:
 		if self.cloudEnabled: 
 			print "Calc distances"
 			trainCloudPos = []
-			for frameNum in trainOnFrameNum:
+			for frameNum, offsetX, offsetY in zip(trainOnFrameNum, trainOffsetsX, trainOffsetsY):
 				cloudPosOnFrame = []
 				posOnFrame = self.trainingData[frameNum][1]
 				for trNum, pos in enumerate(posOnFrame):
 					if trNum == self.trackerNum:
 						continue #Skip distance to self
-					xdiff = pos[0] - posOnFrame[self.trackerNum][0]
-					ydiff = pos[1] - posOnFrame[self.trackerNum][1]
+					xdiff = pos[0] - (posOnFrame[self.trackerNum][0] + offsetX)
+					ydiff = pos[1] - (posOnFrame[self.trackerNum][1] + offsetY)
 
 					if self.axis == "x":
 						cloudPosOnFrame.append(xdiff)
@@ -280,7 +280,7 @@ class RelTracker:
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
-	if 0:
+	if 1:
 		reltracker = RelTracker()
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
