@@ -321,39 +321,24 @@ class RelTracker:
 		numTrackers = len(self.trainingData[0][1])
 		self.scalePredictors = []
 
-		#First layer of hierarchy
-		layer = []
-		for trNum in range(numTrackers):
-			for axis in ['x', 'y']:
-				relaxis = RelAxis()
-				relaxis.trackerNum = trNum
-				relaxis.axis = axis
-				relaxis.shapeNoise = 12
-				relaxis.cloudEnabled = 1
-				relaxis.supportMaxOffset = 39
-				relaxis.trainVarianceOffset = 41
-				relaxis.rotationVar = 0.1
-				for td in self.trainingData:
-					relaxis.Add(*td)
-				layer.append(relaxis)
-		self.scalePredictors.append(layer)
+		settings = [{'shapeNoise':12, 'cloudEnabled':1, 'supportMaxOffset':39, 'trainVarianceOffset': 41, 'rotationVar': 0.1},
+				{'shapeNoise':100, 'cloudEnabled':0, 'supportMaxOffset':20, 'trainVarianceOffset': 5, 'rotationVar': 0.1}]
 
-		#Second layer of hierarchy
+		#For each layer of hierarchy
 		layer = []
-		for trNum in range(numTrackers):
-			for axis in ['x', 'y']:
-				relaxis = RelAxis()
-				relaxis.trackerNum = trNum
-				relaxis.axis = axis
-				relaxis.cloudEnabled = 0
-				relaxis.supportMaxOffset = 20
-				relaxis.trainVarianceOffset = 5
-				relaxis.rotationVar = 0.1
-				for td in self.trainingData:
-					relaxis.Add(*td)
-				layer.append(relaxis)
-		self.scalePredictors.append(layer)
-		
+		for layerSettings in settings:
+			for trNum in range(numTrackers):
+				for axis in ['x', 'y']:
+					relaxis = RelAxis()
+					relaxis.trackerNum = trNum
+					relaxis.axis = axis
+					for settingKey in layerSettings:
+						setattr(relaxis, settingKey, layerSettings[settingKey])
+					for td in self.trainingData:
+						relaxis.Add(*td)
+					layer.append(relaxis)
+			self.scalePredictors.append(layer)
+
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
