@@ -74,14 +74,24 @@ def ToGrey(col):
 #*******************************************************************************
 
 class RelAxis:
+	"""
+	RelAxis represents a regression model in a particular axis. A tracking
+	point generally requires (at least) two RelAxis objects for 2D tracking.
+	"""
+
 	def __init__(self):
 		self.numSupportPix = 500
 		self.numTrainingOffsets = 5000
 		self.maxSupportOffset = 30
 		self.reg = None
 		self.trainingData = None
+		self.verbose = 1
 
 	def Train(self):
+		"""
+		Train a regression model based on the added training data. This class only
+		considers a single axis for a single tracking point.
+		"""
 
 		#Generate support pix and training offsets
 		self.supportPixOffset = np.random.uniform(-self.maxSupportOffset, 
@@ -112,7 +122,7 @@ class RelAxis:
 				trainOffsetsY.append(trainOffset[1])
 				trainRotations.append(trainRotation)
 				trainOnFrameNum.append(frameNum)
-			print len(trainPix)
+			if self.verbose: print len(trainPix)
 		numValidTraining = len(trainPix)
 		assert numValidTraining > 0
 
@@ -126,7 +136,7 @@ class RelAxis:
 		#Note: this implementation is not efficiant as the distances are
 		#repeatedly recalculated!
 		if self.cloudEnabled: 
-			print "Calc distances"
+			if self.verbose: print "Calc distances"
 			trainCloudPos = []
 			for frameNum, offsetX, offsetY, rotation in \
 				zip(trainOnFrameNum, trainOffsetsX, trainOffsetsY, trainRotations):
@@ -179,6 +189,12 @@ class RelAxis:
 		self.reg.fit(trainData, labels)
 
 	def Predict(self, im, pos):
+		"""
+		Request a prediction based on a specified image and tracker position arrangement. The
+		resulting prediction is for a single axis and a single point.
+		"""
+
+		assert self.reg is not None #A regression model must first be trained
 		currentPos = copy.deepcopy(pos)
 		pix = GetPixIntensityAtLoc(im.load(), self.supportPixOffset, currentPos[self.trackerNum])
 		if pix is None:
@@ -226,6 +242,10 @@ class RelTracker:
 		self.numIterations = 5
 
 	def Add(self, im, pos):
+		"""
+		Add an annotated frame with a set of tracker positions for later 
+		training of the regression model.
+		"""
 		if im.mode != "RGB" and im.mode != "L": 
 			im = im.convert("RGB")
 
@@ -234,6 +254,12 @@ class RelTracker:
 
 
 	def Train(self):
+		"""
+		Train regression models based on the added training data. This class 
+		considers multiple tracking points in 2D tracking (as in 2 axis are
+		used for each tracking point.)
+		"""
+
 		assert(len(self.trainingData)>0)
 
 		numTrackers = len(self.trainingData[0][1])
@@ -278,6 +304,11 @@ class RelTracker:
 				relaxis.trainingData = None #Remove data that cannot be pickled
 
 	def Predict(self, im, pos):
+		"""
+		Request predictions based on a specified image and tracker position arrangement. The
+		resulting prediction is for all tracking points.
+		"""
+
 		assert len(pos) == len(self.scalePredictors[0]) / 2
 		if im.mode != "RGB" and im.mode != "L": 
 			im = im.convert("RGB")
