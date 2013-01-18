@@ -140,7 +140,9 @@ class RelAxis:
 				trainOffsetsY.append(trainOffset[1])
 				trainRotations.append(trainRotation)
 				trainOnFrameNum.append(frameNum)
-			if self.verbose: print len(trainPix)
+			if self.verbose: 
+				print len(trainPix)
+				sys.stdout.flush()
 		numValidTraining = len(trainPix)
 		assert numValidTraining > 0
 
@@ -154,7 +156,9 @@ class RelAxis:
 		#Note: this implementation is not efficiant as the distances are
 		#repeatedly recalculated!
 		if self.cloudEnabled: 
-			if self.verbose: print "Calc distances"
+			if self.verbose: 
+				print "Calc distances"
+				sys.stdout.flush()
 			trainCloudPos = []
 			for frameNum, offsetX, offsetY, rotation in \
 				zip(trainOnFrameNum, trainOffsetsX, trainOffsetsY, trainRotations):
@@ -248,6 +252,8 @@ class RelAxis:
 		else: axisNum = 1
 
 		#Adjust position
+		if not isinstance(currentPos[self.trackerNum], list): #Ensure this is a list
+			currentPos[self.trackerNum] = list(currentPos[self.trackerNum])
 		currentPos[self.trackerNum][axisNum] -= pred
 
 		return currentPos
@@ -280,6 +286,7 @@ class RelTracker:
 		self.trainingData = []
 		self.numIterations = 5
 		self.scalePredictors = None
+		self.serialTraining = None
 
 	def Add(self, im, pos):
 		"""
@@ -351,6 +358,7 @@ class RelTracker:
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
+				sys.stdout.flush()
 				relaxis.Train()
 
 	def Predict(self, im, pos):
@@ -379,7 +387,29 @@ class RelTracker:
 					currentPos = relaxis.Predict(im, currentPos)
 
 		return currentPos
+
+	def PrepareForPickle(self):
+		assert self.serialTraining is None
+		self.serialTraining = []
+		for im, pos in self.trainingData:
+			self.serialTraining.append((dict(data=im.tostring(), size=im.size, mode=im.mode), pos))
+		self.ClearTraining()
+
+	def PostUnPickle(self):
+		assert self.serialTraining is not None
+		self.trainingData = []
+		for imDat, pos in self.serialTraining:
+			im = Image.fromstring(**imDat)
+			self.trainingData.append((im, pos))
+		self.serialTraining = None
+
+	def GetProgress(self):
+		if self.scalePredictors is not None: return 1
+		return 0
 		
+	def Update(self):
+		self.Train()
+
 #************************************************************
 
 if __name__ == "__main__":
@@ -398,6 +428,7 @@ if __name__ == "__main__":
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
 			assert os.path.exists(imgFina)
 			print ti, imgFina
+			
 			im = Image.open(imgFina)
 
 			reltracker.Add(im, posData[ti])
