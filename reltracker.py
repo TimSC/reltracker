@@ -208,13 +208,16 @@ class RelTracker:
 		self.numIterations = 5
 
 	def Add(self, im, pos):
+		if im.mode != "RGB" and im.mode != "L": 
+			im = im.convert("RGB")
+
 		self.trainingData.append((im, pos))
 		assert(len(self.trainingData[0][1]) == len(self.trainingData[-1][1]))
 
 
 	def Train(self):
-		
 		assert(len(self.trainingData)>0)
+
 		numTrackers = len(self.trainingData[0][1])
 		self.scalePredictors = []
 
@@ -258,6 +261,8 @@ class RelTracker:
 
 	def Predict(self, im, pos):
 		assert len(pos) == len(self.scalePredictors[0]) / 2
+		if im.mode != "RGB" and im.mode != "L": 
+			im = im.convert("RGB")
 		currentPos = copy.deepcopy(pos)
 		
 		#For each layer in the hierarchy,
@@ -286,7 +291,6 @@ if __name__ == "__main__":
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
 			print ti, imgFina
 			im = Image.open(imgFina)
-			if im.mode != "RGB": im = im.convert("RGB")
 
 			reltracker.Add(im, posData[ti])
 
@@ -307,7 +311,6 @@ if __name__ == "__main__":
 				break
 			print "frameNum", frameNum
 			im = Image.open(imgFina)
-			if im.mode != "RGB": im = im.convert("RGB")
 
 			if frameNum in posData:
 				currentPos = posData[frameNum]
