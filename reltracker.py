@@ -81,7 +81,7 @@ class RelAxis:
 
 	def __init__(self):
 		self.numSupportPix = 500
-		self.numTrainingOffsets = 5000
+		self.numTrainingOffsets = 50 #5000
 		self.maxSupportOffset = 30
 		self.reg = None
 		self.trainingData = []
@@ -252,6 +252,8 @@ class RelAxis:
 		else: axisNum = 1
 
 		#Adjust position
+		if not isinstance(currentPos[self.trackerNum], list): #Ensure this is a list
+			currentPos[self.trackerNum] = list(currentPos[self.trackerNum])
 		currentPos[self.trackerNum][axisNum] -= pred
 
 		return currentPos
@@ -391,18 +393,18 @@ class RelTracker:
 		self.serialTraining = []
 		for im, pos in self.trainingData:
 			self.serialTraining.append((dict(data=im.tostring(), size=im.size, mode=im.mode), pos))
-		self.trainingData = None
+		self.ClearTraining()
 
 	def PostUnPickle(self):
 		assert self.serialTraining is not None
-		self.trainingData = [], []
+		self.trainingData = []
 		for imDat, pos in self.serialTraining:
 			im = Image.fromstring(**imDat)
 			self.trainingData.append((im, pos))
 		self.serialTraining = None
 
 	def GetProgress(self):
-		if scalePredictors is not None: return 1
+		if self.scalePredictors is not None: return 1
 		return 0
 		
 	def Update(self):
