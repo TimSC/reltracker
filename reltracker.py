@@ -414,6 +414,14 @@ class RelTracker:
 		for imDat, pos in self.serialTraining:
 			im = Image.fromstring(**imDat)
 			self.trainingData.append((im, pos))
+
+		#Set training data in axis objects
+		for layerNum, layer in enumerate(self.scalePredictors):
+			for relaxis in layer:
+				relaxis.ClearTraining()
+				for tr in self.trainingData:
+					relaxis.Add(*tr)
+
 		self.serialTraining = None
 
 	def GetProgress(self):
