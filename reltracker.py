@@ -91,6 +91,7 @@ class RelAxis:
 		trainPix = []
 		trainOffsetsX = []
 		trainOffsetsY = []
+		trainRotations = [ ]
 		trainOnFrameNum = []
 		for frameNum, (im, pos) in enumerate(self.trainingData):
 			trPos = pos[self.trackerNum]
@@ -98,16 +99,18 @@ class RelAxis:
 
 			for train in range(self.numTrainingOffsets/len(self.trainingData)):
 				trainOffset = np.random.randn(2) * self.trainVarianceOffset
+				trainRotation = np.random.randn() * self.rotationVar
 
 				offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
 
-				pix = GetPixIntensityAtLoc(iml, self.supportPixOffset, offset)
+				pix = GetPixIntensityAtLoc(iml, self.supportPixOffset, offset, trainRotation)
 				if pix is None:
 					#Pixel is outside of image: discard this training offset
 					continue
 				trainPix.append(pix)
 				trainOffsetsX.append(trainOffset[0])
 				trainOffsetsY.append(trainOffset[1])
+				trainRotations.append(trainRotation)
 				trainOnFrameNum.append(frameNum)
 			print len(trainPix)
 		numValidTraining = len(trainPix)
@@ -125,19 +128,34 @@ class RelAxis:
 		if self.cloudEnabled: 
 			print "Calc distances"
 			trainCloudPos = []
-			for frameNum, offsetX, offsetY in zip(trainOnFrameNum, trainOffsetsX, trainOffsetsY):
+			for frameNum, offsetX, offsetY, rotation in \
+				zip(trainOnFrameNum, trainOffsetsX, trainOffsetsY, trainRotations):
 				cloudPosOnFrame = []
 				posOnFrame = self.trainingData[frameNum][1]
 				for trNum, pos in enumerate(posOnFrame):
 					if trNum == self.trackerNum:
 						continue #Skip distance to self
-					xdiff = pos[0] - (posOnFrame[self.trackerNum][0] + offsetX)
-					ydiff = pos[1] - (posOnFrame[self.trackerNum][1] + offsetY)
+
+					#Rotate training offset vector
+					offsetRX = math.cos(rotation) * offsetX - math.sin(rotation) * offsetY
+					offsetRy = math.sin(rotation) * offsetX + math.cos(rotation) * offsetY
+
+					#Calculate unrotated diff vector to cloud position
+					diffX = pos[0] - (posOnFrame[self.trackerNum][0])
+					diffY = pos[1] - (posOnFrame[self.trackerNum][1])
+
+					#Rotate the cloud position vector
+					diffRX = math.cos(rotation) * diffX - math.sin(rotation) * diffY
+					diffRY = math.sin(rotation) * diffX + math.cos(rotation) * diffY
+
+					#Modify cloud position with synthetic training offset
+					offsetDiffRX = diffRX - offsetRX
+					offsetDiffRY = diffRY - offsetRY
 
 					if self.axis == "x":
-						cloudPosOnFrame.append(xdiff)
+						cloudPosOnFrame.append(offsetDiffRX)
 					else:
-						cloudPosOnFrame.append(ydiff)
+						cloudPosOnFrame.append(offsetDiffRY)
 				trainCloudPos.append(cloudPosOnFrame)
 
 			#Add noise to cloud positions
@@ -314,6 +332,7 @@ if __name__ == "__main__":
 		frameNum = 0
 		currentPos = None
 		while 1:
+			#Load current frame
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(frameNum)
 			if not os.path.exists(imgFina):
 				break
