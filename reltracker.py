@@ -260,6 +260,10 @@ class RelTracker:
 	across Pose and Expression". This class contains multiple regression
 	models for prediction tracking on video frames. 
 
+	The name reltracker comes from RELative Tracker, because the relative
+	positions of the other tracking points are included in the prediction
+	model.
+
 	1) Add some annotated frames using Add()
 	2) Train a model by Train()
 	3) Predict new positions by using Predict()
