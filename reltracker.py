@@ -18,9 +18,9 @@ def BilinearSample(imgPix, x, y):
 
 	#If a single number has been returned, convert to list
 	if not hasattr(p00, '__iter__'): p00 = [p00]
-	if not hasattr(p10, '__iter__'): p00 = [p10]
-	if not hasattr(p01, '__iter__'): p00 = [p01]
-	if not hasattr(p11, '__iter__'): p00 = [p11]
+	if not hasattr(p10, '__iter__'): p10 = [p10]
+	if not hasattr(p01, '__iter__'): p01 = [p01]
+	if not hasattr(p11, '__iter__'): p11 = [p11]
 
 	#Interpolate colour
 	c1 = [p00c * (1.-xfrac) + p10c * xfrac for p00c, p10c in zip(p00, p10)]
