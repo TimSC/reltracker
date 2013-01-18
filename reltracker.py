@@ -287,6 +287,7 @@ if __name__ == "__main__":
 		print "Usage:",sys.argv[0],"markedPositions.dat /path/to/images"
 		exit(0)
 
+	assert os.path.exists(sys.argv[1])
 	posData = ReadPosData(sys.argv[1])
 
 	if 1:
@@ -295,6 +296,7 @@ if __name__ == "__main__":
 		#Add training data to tracker
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
+			assert os.path.exists(imgFina)
 			print ti, imgFina
 			im = Image.open(imgFina)
 
