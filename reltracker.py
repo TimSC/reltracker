@@ -177,8 +177,8 @@ class RelAxis:
 					diffY = pos[1] - (posOnFrame[self.trackerNum][1])
 
 					#Rotate the cloud position vector
-					diffRX = math.cos(rotation) * diffX - math.sin(rotation) * diffY
-					diffRY = math.sin(rotation) * diffX + math.cos(rotation) * diffY
+					diffRX = math.cos(-rotation) * diffX - math.sin(-rotation) * diffY
+					diffRY = math.sin(-rotation) * diffX + math.cos(-rotation) * diffY
 
 					#Modify cloud position with synthetic training offset
 					offsetDiffRX = diffRX - offsetRX
@@ -324,9 +324,9 @@ class RelTracker:
 		self.scalePredictors = []
 
 		#For each layer of hierarchy
-		layer = []
-		for layerSettings in self.settings:
 
+		for layerSettings in self.settings:
+			layer = []
 			#For each tracker
 			for trNum in range(numTrackers):
 
