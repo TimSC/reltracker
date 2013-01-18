@@ -287,6 +287,8 @@ class RelTracker:
 		self.numIterations = 5
 		self.scalePredictors = None
 		self.serialTraining = None
+		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'supportMaxOffset':39, 'trainVarianceOffset': 41, 'rotationVar': 0.1},
+				{'shapeNoise':100, 'cloudEnabled':0, 'supportMaxOffset':20, 'trainVarianceOffset': 5, 'rotationVar': 0.1}]
 
 	def Add(self, im, pos):
 		"""
@@ -321,13 +323,14 @@ class RelTracker:
 		numTrackers = len(self.trainingData[0][1])
 		self.scalePredictors = []
 
-		settings = [{'shapeNoise':12, 'cloudEnabled':1, 'supportMaxOffset':39, 'trainVarianceOffset': 41, 'rotationVar': 0.1},
-				{'shapeNoise':100, 'cloudEnabled':0, 'supportMaxOffset':20, 'trainVarianceOffset': 5, 'rotationVar': 0.1}]
-
 		#For each layer of hierarchy
 		layer = []
-		for layerSettings in settings:
+		for layerSettings in self.settings:
+
+			#For each tracker
 			for trNum in range(numTrackers):
+
+				#Create two axis trackers
 				for axis in ['x', 'y']:
 					relaxis = RelAxis()
 					relaxis.trackerNum = trNum
