@@ -285,8 +285,10 @@ class RelTracker:
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
-	if 1:
+	if 0:
 		reltracker = RelTracker()
+
+		#Add training data to tracker
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
 			print ti, imgFina
@@ -294,7 +296,7 @@ if __name__ == "__main__":
 
 			reltracker.Add(im, posData[ti])
 
-
+		#Train the tracker
 		reltracker.Train()
 		reltracker.trainingData = None #Remove data that cannot be pickled
 
@@ -313,6 +315,7 @@ if __name__ == "__main__":
 			im = Image.open(imgFina)
 
 			if frameNum in posData:
+				#Use existing known positions
 				currentPos = posData[frameNum]
 			elif currentPos is not None:
 				#Predict position on current frame
