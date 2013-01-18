@@ -81,7 +81,7 @@ class RelAxis:
 
 	def __init__(self):
 		self.numSupportPix = 500
-		self.numTrainingOffsets = 50 #5000
+		self.numTrainingOffsets = 5000
 		self.maxSupportOffset = 30
 		self.reg = None
 		self.trainingData = []
