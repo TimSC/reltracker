@@ -285,7 +285,7 @@ class RelTracker:
 if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
-	if 0:
+	if 1:
 		reltracker = RelTracker()
 
 		#Add training data to tracker
