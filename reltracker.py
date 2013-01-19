@@ -112,7 +112,7 @@ class RelAxis:
 		assert self.supportPixOffset is not None
 
 		#Convert to grey scale, numpy array
-		greyPix = np.empty((len(self.trainInt), self.numSupportPix))
+		greyPix = np.empty((len(self.trainInt), len(self.trainInt[0])))
 		for rowNum, trainIntensity in enumerate(self.trainInt):
 			for pixNum, col in enumerate(trainIntensity):
 				greyPix[rowNum, pixNum] = ToGrey(col)
@@ -127,8 +127,8 @@ class RelAxis:
 				print "Calc distances"
 				sys.stdout.flush()
 			trainCloudPos = []
-			for frameNum, offsetX, offsetY, rotation in \
-				zip(trainOnFrameNum, trainOffsetsX, trainOffsetsY, trainRotations):
+			for frameNum, offset, rotation in \
+				zip(self.trainFra, self.trainOff, self.trainRot):
 				cloudPosOnFrame = []
 				posOnFrame = self.trainingData[frameNum][1]
 				for trNum, pos in enumerate(posOnFrame):
@@ -136,8 +136,8 @@ class RelAxis:
 						continue #Skip distance to self
 
 					#Rotate training offset vector
-					offsetRX = math.cos(rotation) * offsetX - math.sin(rotation) * offsetY
-					offsetRY = math.sin(rotation) * offsetX + math.cos(rotation) * offsetY
+					offsetRX = math.cos(rotation) * offset[0] - math.sin(rotation) * offset[1]
+					offsetRY = math.sin(rotation) * offset[0] + math.cos(rotation) * offset[1]
 
 					#Calculate unrotated diff vector to cloud position
 					diffX = pos[0] - (posOnFrame[self.trackerNum][0])
@@ -259,6 +259,7 @@ class RelTracker:
 		self.trainingIntLayers = []
 		self.trainingOffLayers = []
 		self.trainingRotLayers = []
+		self.trainingFraLayers = []
 
 		self.numIterations = 5
 		self.scalePredictors = None
@@ -269,7 +270,7 @@ class RelTracker:
 		self.trainingIntLayers = None
 		self.trainVarianceOffset = [41, 5]
 		self.rotationVar = [0., 0.]
-		self.numTrainingOffsets = [5000, 5000]
+		self.numTrainingOffsets = [500, 500] #[5000, 5000]
 		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'trainVarianceOffset': 41},
 				{'shapeNoise':100, 'cloudEnabled':0}]
 
@@ -309,7 +310,7 @@ class RelTracker:
 		layerTrainVarOffset = self.trainVarianceOffset[layerNum]
 		layerRotationVar = self.rotationVar[layerNum]
 		layerNumTrainingOffsets = self.numTrainingOffsets[layerNum]
-		outTrainInt, outTrainOffsets, outTrainRot = [], [], []
+		outTrainInt, outTrainOffsets, outTrainRot, outTrainFra = [], [], [], []
 
 		for frameNum, (im, pos) in enumerate(self.trainingData):
 			trPos = pos[trNum]
@@ -331,8 +332,9 @@ class RelTracker:
 				outTrainInt.append(pix)
 				outTrainOffsets.append(trainOffset)
 				outTrainRot.append(trainRotation)
+				outTrainFra.append(frameNum)
 
-		return outTrainInt, outTrainOffsets, outTrainRot
+		return outTrainInt, outTrainOffsets, outTrainRot, outTrainFra
 
 
 	def ProgressTraining(self):
@@ -378,30 +380,35 @@ class RelTracker:
 			self.trainingIntLayers = []
 			self.trainingOffLayers = []
 			self.trainingRotLayers = []
+			self.trainingFraLayers = []
 
 			for layer in self.scalePredictors:
 				self.trainingIntLayers.append([])
 				self.trainingOffLayers.append([])
 				self.trainingRotLayers.append([])
+				self.trainingFraLayers.append([])
 
 				for relaxis in layer:
 					self.trainingIntLayers[-1].append([])
 					self.trainingOffLayers[-1].append([])
 					self.trainingRotLayers[-1].append([])
+					self.trainingFraLayers[-1].append([])
 
 
-		for layerNum, (layer, layerSupportPixOffset, trainingIntLayer, trainingIntsL, trainingOffL, trainingRotL) in \
+		for layerNum, (layer, layerSupportPixOffset, trainingIntLayer, trainingIntsL, trainingOffL, trainingRotL, trainFraL) in \
 			enumerate(zip(self.scalePredictors, self.supportPixOffset, self.trainingIntLayers, 
-				self.trainingIntLayers, self.trainingOffLayers, self.trainingRotLayers)):
-			for trNum, (supportPixOffset, ints, offs, rots) in enumerate(zip(layerSupportPixOffset, trainingIntsL, trainingOffL, trainingRotL)):
-				if len(self.trainingIntLayers[layerNum]) >= self.numTrainingOffsets[layerNum]:
+				self.trainingIntLayers, self.trainingOffLayers, self.trainingRotLayers, self.trainingFraLayers)):
+			for trNum, (supportPixOffset, ints, offs, rots, fra) in \
+				enumerate(zip(layerSupportPixOffset, trainingIntsL, trainingOffL, trainingRotL, trainFraL)):
+				if len(ints) >= self.numTrainingOffsets[layerNum]:
 					continue #Skip completed tracker's intensities
 
-				trainInt, trainOffsets, trainRot = self.GenerateTrainingIntensities(layerNum, trNum, supportPixOffset)
+				trainInt, trainOffsets, trainRot, trainFra = self.GenerateTrainingIntensities(layerNum, trNum, supportPixOffset)
 				
 				ints.extend(trainInt)
 				offs.extend(trainOffsets)
 				rots.extend(trainRot)
+				fra.extend(trainFra)
 				print len(ints)
 				return
 	
@@ -415,6 +422,7 @@ class RelTracker:
 				relaxis.trainInt = self.trainingIntLayers[layerNum][relaxis.trackerNum]
 				relaxis.trainOff = self.trainingOffLayers[layerNum][relaxis.trackerNum]
 				relaxis.trainRot = self.trainingRotLayers[layerNum][relaxis.trackerNum]
+				relaxis.trainFra = self.trainingFraLayers[layerNum][relaxis.trackerNum]
 
 				relaxis.Train()
 				return
