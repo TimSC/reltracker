@@ -291,6 +291,7 @@ class RelTracker:
 		self.supportPixOffset = []
 		self.numSupportPix = [500, 500]
 		self.maxSupportOffset = [39, 20]
+		self.trainingIntLayers = None
 		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'trainVarianceOffset': 41, 'rotationVar': 0.},
 				{'shapeNoise':100, 'cloudEnabled':0, 'trainVarianceOffset': 5, 'rotationVar': 0.}]
 
@@ -343,8 +344,8 @@ class RelTracker:
 				#For each tracker
 				for trNum in range(numTrackers):
 
-					trSupportPixOffset = np.random.uniform(-self.layerMaxSupportOffset, 
-						self.layerMaxSupportOffset, (self.layerNumSupportPix, 2))
+					trSupportPixOffset = np.random.uniform(-layerMaxSupportOffset, 
+						layerMaxSupportOffset, (layerNumSupportPix, 2))
 					layerPixOffset.append(trSupportPixOffset)
 
 					#Create two axis trackers
@@ -362,7 +363,21 @@ class RelTracker:
 				self.scalePredictors.append(layer)
 				self.supportPixOffset.append(layerPixOffset)
 			return
-		
+	
+		#Generate support pixel intensities
+		if self.trainingIntLayers is None:
+			self.trainingIntLayers = []
+			for layer in self.scalePredictors:
+				self.trainingIntLayers.append([])
+
+		for layerNum, (layer, layerSupportPixOffset, trainingIntLayer) in \
+			enumerate(zip(self.scalePredictors, self.supportPixOffset, self.trainingIntLayers)):
+			for trNum, supportPixOffset in enumerate(layerSupportPixOffset):
+				if trNum <= len(trainingIntLayer):
+					continue #Skip completed tracker's intensities
+
+				trainingIntLayer.append(None)
+	
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
