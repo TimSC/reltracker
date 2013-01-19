@@ -443,7 +443,10 @@ if __name__ == "__main__":
 						for j in [-1,0,+1]:
 							col = (255,255,255)
 							if len(im.mode)==1: col = 255
-							iml[int(round(pos[0]+i)),int(round(pos[1]+j))] = col
+							try:
+								iml[int(round(pos[0]+i)),int(round(pos[1]+j))] = col
+							except:
+								pass
 			im.save("{0:05d}.jpg".format(frameNum))
 	
 			#Go to next frame
