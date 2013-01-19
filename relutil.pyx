@@ -75,8 +75,8 @@ def GetPixIntensityAtLoc(np.ndarray[np.uint8_t, ndim=3] iml,
 
 def NumpyArrToGrey(np.ndarray[np.float64_t, ndim=2] pix):
 	cdef int i
+	cdef np.ndarray[np.float64_t, ndim=1] greyPix = np.empty((pix.shape[0],))
 
-	greyPix = np.empty((pix.shape[0],))
 	for i in range(pix.shape[0]):
 		greyPix[i] = 0.299*pix[i,0] + 0.587*pix[i,1] + 0.114*pix[i,2]
 	return greyPix
