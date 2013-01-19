@@ -257,6 +257,10 @@ class RelAxis:
 		currentPos[self.trackerNum][axisNum] -= pred
 
 		return currentPos
+	
+	def TrainingComplete(self):
+		if self.reg is not None: return True
+		return False
 
 #****************************************************
 
@@ -319,36 +323,45 @@ class RelTracker:
 		"""
 
 		assert(len(self.trainingData)>0)
+		while self.GetProgress() < 1.:
+			self.ProgressTraining()
+
+	def ProgressTraining(self):
 
 		numTrackers = len(self.trainingData[0][1])
-		self.scalePredictors = []
 
-		#For each layer of hierarchy
+		if self.scalePredictors is None:
+			self.scalePredictors = []
 
-		for layerSettings in self.settings:
-			layer = []
-			#For each tracker
-			for trNum in range(numTrackers):
+			#For each layer of hierarchy
+			for layerSettings in self.settings:
+				layer = []
+				#For each tracker
+				for trNum in range(numTrackers):
 
-				#Create two axis trackers
-				for axis in ['x', 'y']:
-					relaxis = RelAxis()
-					relaxis.trackerNum = trNum
-					relaxis.axis = axis
-					for settingKey in layerSettings:
-						setattr(relaxis, settingKey, layerSettings[settingKey])
-					for td in self.trainingData:
-						relaxis.Add(*td)
-					layer.append(relaxis)
-			self.scalePredictors.append(layer)
-
+					#Create two axis trackers
+					for axis in ['x', 'y']:
+						relaxis = RelAxis()
+						relaxis.trackerNum = trNum
+						relaxis.axis = axis
+						for settingKey in layerSettings:
+							setattr(relaxis, settingKey, layerSettings[settingKey])
+						for td in self.trainingData:
+							relaxis.Add(*td)
+						layer.append(relaxis)
+				self.scalePredictors.append(layer)
+			return
+		
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
+				if relaxis.TrainingComplete(): continue #Skip completed trackers
+
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
 				sys.stdout.flush()
 				relaxis.Train()
-
+				return
+				
 	def Predict(self, im, pos):
 		"""
 		Request predictions based on a specified image and tracker position arrangement. The
@@ -389,6 +402,14 @@ class RelTracker:
 		for imDat, pos in self.serialTraining:
 			im = Image.fromstring(**imDat)
 			self.trainingData.append((im, pos))
+
+		#Set training data in axis objects
+		for layerNum, layer in enumerate(self.scalePredictors):
+			for relaxis in layer:
+				relaxis.ClearTraining()
+				for tr in self.trainingData:
+					relaxis.Add(*tr)
+
 		self.serialTraining = None
 
 	def GetProgress(self):
