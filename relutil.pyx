@@ -7,10 +7,11 @@ import cmath, math
 cimport numpy as np
 import numpy as np
 
-cdef BilinearSample(imgPix, float x, float y):
+cdef BilinearSample(np.ndarray[np.uint8_t, ndim=3] imgPix, 
+	float x, float y, 
+	np.ndarray[np.uint8_t, ndim=2] p, #Temporary storage
+	np.ndarray[np.float64_t, ndim=1] out):
 
-	cdef np.ndarray[np.uint8_t, ndim=2] p = np.empty((4, imgPix.shape[2]), dtype=np.uint8)
-	cdef np.ndarray out = np.empty((imgPix.shape[2]))
 	cdef int c
 	cdef int xi = int(x)
 	cdef double xfrac = x - xi
@@ -64,7 +65,7 @@ def GetPixIntensityAtLoc(np.ndarray[np.uint8_t, ndim=3] iml,
 		try:
 			x = rx + locx
 			y = ry + locy
-			out[offsetNum,:] = BilinearSample(iml, x, y)
+			BilinearSample(iml, x, y, temp, out[offsetNum,:])
 		except IndexError:
 			return None
 	return out
