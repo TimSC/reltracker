@@ -89,7 +89,7 @@ class RelAxisSimple:
 		self.shapeNoise = 12
 		self.cloudEnabled = 1
 		self.trainVarianceOffset = 41
-		self.rotationVar = 0.1
+		self.rotationVar = 0.
 
 	def Add(self, im, pos):
 		"""
@@ -328,7 +328,7 @@ class RelTrackerSimple:
 				relaxis.cloudEnabled = 1
 				relaxis.supportMaxOffset = 39
 				relaxis.trainVarianceOffset = 41
-				relaxis.rotationVar = 0.1
+				relaxis.rotationVar = 0.
 				for td in self.trainingData:
 					relaxis.Add(*td)
 				layer.append(relaxis)
@@ -344,7 +344,7 @@ class RelTrackerSimple:
 				relaxis.cloudEnabled = 0
 				relaxis.supportMaxOffset = 20
 				relaxis.trainVarianceOffset = 5
-				relaxis.rotationVar = 0.1
+				relaxis.rotationVar = 0.
 				for td in self.trainingData:
 					relaxis.Add(*td)
 				layer.append(relaxis)

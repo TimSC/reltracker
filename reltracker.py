@@ -89,7 +89,7 @@ class RelAxis:
 		self.shapeNoise = 12
 		self.cloudEnabled = 1
 		self.trainVarianceOffset = 41
-		self.rotationVar = 0.1
+		self.rotationVar = 0.
 
 	def Add(self, im, pos):
 		"""
@@ -177,8 +177,8 @@ class RelAxis:
 					diffY = pos[1] - (posOnFrame[self.trackerNum][1])
 
 					#Rotate the cloud position vector
-					diffRX = math.cos(-rotation) * diffX - math.sin(-rotation) * diffY
-					diffRY = math.sin(-rotation) * diffX + math.cos(-rotation) * diffY
+					diffRX = math.cos(rotation) * diffX - math.sin(rotation) * diffY
+					diffRY = math.sin(rotation) * diffX + math.cos(rotation) * diffY
 
 					#Modify cloud position with synthetic training offset
 					offsetDiffRX = diffRX - offsetRX
@@ -287,8 +287,8 @@ class RelTracker:
 		self.numIterations = 5
 		self.scalePredictors = None
 		self.serialTraining = None
-		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'supportMaxOffset':39, 'trainVarianceOffset': 41, 'rotationVar': 0.1},
-				{'shapeNoise':100, 'cloudEnabled':0, 'supportMaxOffset':20, 'trainVarianceOffset': 5, 'rotationVar': 0.1}]
+		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'supportMaxOffset':39, 'trainVarianceOffset': 41, 'rotationVar': 0.},
+				{'shapeNoise':100, 'cloudEnabled':0, 'supportMaxOffset':20, 'trainVarianceOffset': 5, 'rotationVar': 0.}]
 
 	def Add(self, im, pos):
 		"""
