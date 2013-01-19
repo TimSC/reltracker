@@ -10,7 +10,8 @@ import numpy as np
 cdef BilinearSample(np.ndarray[np.uint8_t, ndim=3] imgPix, 
 	float x, float y, 
 	np.ndarray[np.uint8_t, ndim=2] p, #Temporary storage
-	np.ndarray[np.float64_t, ndim=1] out):
+	np.ndarray[np.float64_t, ndim=2] out,
+	int row):
 
 	cdef int c
 	cdef int xi = int(x)
@@ -36,9 +37,7 @@ cdef BilinearSample(np.ndarray[np.uint8_t, ndim=3] imgPix,
 	for i in range(imgPix.shape[2]):
 		c1 = p[0,c] * (1.-xfrac) + p[1,c] * xfrac
 		c2 = p[2,c] * (1.-xfrac) + p[3,c] * xfrac
-		out[c] = c1 * (1.-yfrac) + c2 * yfrac
-
-	return out
+		out[row,c] = c1 * (1.-yfrac) + c2 * yfrac
 
 def GetPixIntensityAtLoc(np.ndarray[np.uint8_t, ndim=3] iml, 
 	np.ndarray[np.float64_t, ndim=2] supportOffsets, 
@@ -65,7 +64,7 @@ def GetPixIntensityAtLoc(np.ndarray[np.uint8_t, ndim=3] iml,
 		try:
 			x = rx + locx
 			y = ry + locy
-			BilinearSample(iml, x, y, temp, out[offsetNum,:])
+			BilinearSample(iml, x, y, temp, out, offsetNum)
 		except IndexError:
 			return None
 	return out
