@@ -285,6 +285,11 @@ class RelTracker:
 
 	def __init__(self):
 		self.trainingData = []
+
+		self.trainingIntLayers = []
+		self.trainingOffLayers = []
+		self.trainingRotLayers = []
+
 		self.numIterations = 5
 		self.scalePredictors = None
 		self.serialTraining = None
@@ -292,8 +297,11 @@ class RelTracker:
 		self.numSupportPix = [500, 500]
 		self.maxSupportOffset = [39, 20]
 		self.trainingIntLayers = None
-		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'trainVarianceOffset': 41, 'rotationVar': 0.},
-				{'shapeNoise':100, 'cloudEnabled':0, 'trainVarianceOffset': 5, 'rotationVar': 0.}]
+		self.trainVarianceOffset = [41, 5]
+		self.rotationVar = [0., 0.]
+		self.numTrainingOffsets = [5000, 5000]
+		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'trainVarianceOffset': 41},
+				{'shapeNoise':100, 'cloudEnabled':0}]
 
 	def Add(self, im, pos):
 		"""
@@ -325,6 +333,38 @@ class RelTracker:
 
 		while self.GetProgress() < 1.:
 			self.ProgressTraining()
+
+	def GenerateTrainingIntensities(self, layerNum, trNum, supportPixOffset):
+
+		layerTrainVarOffset = self.trainVarianceOffset[layerNum]
+		layerRotationVar = self.rotationVar[layerNum]
+		layerNumTrainingOffsets = self.numTrainingOffsets[layerNum]
+		outTrainInt, outTrainOffsets, outTrainRot = [], [], []
+
+		for frameNum, (im, pos) in enumerate(self.trainingData):
+			trPos = pos[trNum]
+			iml = im.load()
+
+			for train in range(layerNumTrainingOffsets/len(self.trainingData)):
+
+				trainRotation = np.random.randn() * layerRotationVar
+				trainOffset = np.random.randn(2) * layerTrainVarOffset
+
+				offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
+
+				pix = GetPixIntensityAtLoc(iml, supportPixOffset, offset, trainRotation)
+				if pix is None:
+					#Pixel is outside of image: discard this training offset
+					continue
+
+				outTrainInt.append(pix)
+				outTrainOffsets.append(trainOffset)
+				outTrainRot.append(trainRotation)
+
+			print len(outTrainInt)
+
+		return outTrainInt, outTrainOffsets, outTrainRot
+
 
 	def ProgressTraining(self):
 
@@ -364,19 +404,33 @@ class RelTracker:
 				self.supportPixOffset.append(layerPixOffset)
 			return
 	
-		#Generate support pixel intensities
+		#Generate support pixel intensity container structure
 		if self.trainingIntLayers is None:
 			self.trainingIntLayers = []
+			self.trainingOffLayers = []
+			self.trainingRotLayers = []
+
 			for layer in self.scalePredictors:
 				self.trainingIntLayers.append([])
+				self.trainingOffLayers.append([])
+				self.trainingRotLayers.append([])
+
+				for relaxis in layer:
+					self.trainingIntLayers[-1].append([])
+					self.trainingOffLayers[-1].append([])
+					self.trainingRotLayers[-1].append([])
+
 
 		for layerNum, (layer, layerSupportPixOffset, trainingIntLayer) in \
 			enumerate(zip(self.scalePredictors, self.supportPixOffset, self.trainingIntLayers)):
 			for trNum, supportPixOffset in enumerate(layerSupportPixOffset):
-				if trNum <= len(trainingIntLayer):
+				if len(self.trainingIntLayers[layerNum]) > 0:
 					continue #Skip completed tracker's intensities
 
-				trainingIntLayer.append(None)
+				trainInt, trainOffsets, trainRot = self.GenerateTrainingIntensities(layerNum, trNum, supportPixOffset)
+				
+				trainingIntLayer.append(supportInt)
+
 	
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
