@@ -322,12 +322,12 @@ class RelTracker:
 		used for each tracking point.)
 		"""
 
-		assert(len(self.trainingData)>0)
 		while self.GetProgress() < 1.:
 			self.ProgressTraining()
 
 	def ProgressTraining(self):
 
+		assert(len(self.trainingData)>0)
 		numTrackers = len(self.trainingData[0][1])
 
 		if self.scalePredictors is None:
