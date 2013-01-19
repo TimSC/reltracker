@@ -162,10 +162,11 @@ class RelAxis:
 			trainCloudPos = trainCloudPos + np.random.randn(*trainCloudPos.shape) * self.shapeNoise
 
 		#Select axis labels
+		trainOffArr = np.array(self.trainOff)
 		if self.axis == "x":
-			labels = trainOffsetsX
+			labels = self.trainOff[:,0]
 		else:
-			labels = trainOffsetsY
+			labels = self.trainOff[:,1]
 	
 		#If selected, merge the cloud position data with pixel intensities
 		if self.cloudEnabled:
