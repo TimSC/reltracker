@@ -345,7 +345,8 @@ class RelTracker:
 			trPos = pos[trNum]
 			iml = im.load()
 
-			for train in range(layerNumTrainingOffsets/len(self.trainingData)):
+			#for train in range(layerNumTrainingOffsets/len(self.trainingData)):
+			if 1:
 
 				trainRotation = np.random.randn() * layerRotationVar
 				trainOffset = np.random.randn(2) * layerTrainVarOffset
@@ -360,8 +361,6 @@ class RelTracker:
 				outTrainInt.append(pix)
 				outTrainOffsets.append(trainOffset)
 				outTrainRot.append(trainRotation)
-
-			print len(outTrainInt)
 
 		return outTrainInt, outTrainOffsets, outTrainRot
 
@@ -425,15 +424,16 @@ class RelTracker:
 			enumerate(zip(self.scalePredictors, self.supportPixOffset, self.trainingIntLayers, 
 				self.trainingIntLayers, self.trainingOffLayers, self.trainingRotLayers)):
 			for trNum, (supportPixOffset, ints, offs, rots) in enumerate(zip(layerSupportPixOffset, trainingIntsL, trainingOffL, trainingRotL)):
-				if len(self.trainingIntLayers[layerNum]) > 0:
+				if len(self.trainingIntLayers[layerNum]) >= self.numTrainingOffsets[layerNum]:
 					continue #Skip completed tracker's intensities
 
 				trainInt, trainOffsets, trainRot = self.GenerateTrainingIntensities(layerNum, trNum, supportPixOffset)
 				
-				ints.extend(supportInt)
+				ints.extend(trainInt)
 				offs.extend(trainOffsets)
 				rots.extend(trainRot)
-
+				print len(ints)
+				return
 	
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
