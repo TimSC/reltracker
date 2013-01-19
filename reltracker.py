@@ -109,45 +109,15 @@ class RelAxis:
 		Train a regression model based on the added training data. This class only
 		considers a single axis for a single tracking point.
 		"""
-
 		assert self.supportPixOffset is not None
 
-		#Get pixel intensities at training offsets
-		trainPix = []
-		trainOffsetsX = []
-		trainOffsetsY = []
-		trainRotations = [ ]
-		trainOnFrameNum = []
-		for frameNum, (im, pos) in enumerate(self.trainingData):
-			trPos = pos[self.trackerNum]
-			iml = im.load()
-
-			for train in range(self.numTrainingOffsets/len(self.trainingData)):
-				trainOffset = np.random.randn(2) * self.trainVarianceOffset
-				trainRotation = np.random.randn() * self.rotationVar
-
-				offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
-
-				pix = GetPixIntensityAtLoc(iml, self.supportPixOffset, offset, trainRotation)
-				if pix is None:
-					#Pixel is outside of image: discard this training offset
-					continue
-				trainPix.append(pix)
-				trainOffsetsX.append(trainOffset[0])
-				trainOffsetsY.append(trainOffset[1])
-				trainRotations.append(trainRotation)
-				trainOnFrameNum.append(frameNum)
-			if self.verbose: 
-				print len(trainPix)
-				sys.stdout.flush()
-		numValidTraining = len(trainPix)
-		assert numValidTraining > 0
-
 		#Convert to grey scale, numpy array
-		greyPix = np.empty((numValidTraining, self.numSupportPix))
-		for rowNum, trainIntensity in enumerate(trainPix):
+		greyPix = np.empty((len(self.trainInt), self.numSupportPix))
+		for rowNum, trainIntensity in enumerate(self.trainInt):
 			for pixNum, col in enumerate(trainIntensity):
 				greyPix[rowNum, pixNum] = ToGrey(col)
+
+		print greyPix.shape
 
 		#Calculate relative position of other points in cloud
 		#Note: this implementation is not efficiant as the distances are
@@ -442,6 +412,10 @@ class RelTracker:
 
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
 				sys.stdout.flush()
+				relaxis.trainInt = self.trainingIntLayers[layerNum][relaxis.trackerNum]
+				relaxis.trainOff = self.trainingOffLayers[layerNum][relaxis.trackerNum]
+				relaxis.trainRot = self.trainingRotLayers[layerNum][relaxis.trackerNum]
+
 				relaxis.Train()
 				return
 				
