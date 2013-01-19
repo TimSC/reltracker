@@ -135,7 +135,7 @@ class RelAxis:
 
 		assert self.reg is not None #A regression model must first be trained
 		currentPos = copy.deepcopy(pos)
-		pix = GetPixIntensityAtLoc(np.array(im), self.supportPixOffset, 
+		pix = GetPixIntensityAtLoc(np.array(im), im, self.supportPixOffset, 
 			currentPos[self.trackerNum][0], currentPos[self.trackerNum][1])
 		if pix is None:
 			raise Exception("Pixel intensities could not be determined")
@@ -271,7 +271,7 @@ class RelTracker:
 
 			offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
 
-			pix = GetPixIntensityAtLoc(np.array(im), supportPixOffset, offset[0], offset[1], trainRotation)
+			pix = GetPixIntensityAtLoc(np.array(im), im, supportPixOffset, offset[0], offset[1], trainRotation)
 			if pix is None:
 				#Pixel is outside of image: discard this training offset
 				continue
