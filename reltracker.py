@@ -164,19 +164,19 @@ class RelAxis:
 		#Select axis labels
 		trainOffArr = np.array(self.trainOff)
 		if self.axis == "x":
-			labels = self.trainOff[:,0]
+			labels = trainOffArr[:,0]
 		else:
-			labels = self.trainOff[:,1]
+			labels = trainOffArr[:,1]
 	
 		#If selected, merge the cloud position data with pixel intensities
 		if self.cloudEnabled:
-			trainData = np.hstack((greyPix, trainCloudPos))
+			trainDataFinal = np.hstack((greyPix, trainCloudPos))
 		else:
-			trainData = greyPix
+			trainDataFinal = greyPix
 
 		#Train regression model
 		self.reg = ensemble.GradientBoostingRegressor()
-		self.reg.fit(trainData, labels)
+		self.reg.fit(trainDataFinal, labels)
 
 	def Predict(self, im, pos):
 		"""
