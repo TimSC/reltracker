@@ -39,14 +39,22 @@ cdef BilinearSample(imgPix, float x, float y):
 
 	return out
 
-def GetPixIntensityAtLoc(iml, supportOffsets, float locx, float locy, float rotation = 0.):
-	cdef float x, y, rx, ry
-	cdef float offsetX, offsetY
+def GetPixIntensityAtLoc(np.ndarray[np.uint8_t, ndim=3] iml, 
+	np.ndarray[np.float64_t, ndim=2] supportOffsets, 
+	float locx, float locy,		
+	float rotation = 0.):
 
-	out = []
-	for offset in supportOffsets:
-		offsetX = offset[0]
-		offsetY = offset[1]
+	cdef np.ndarray[np.float64_t, ndim=2] out = np.empty((supportOffsets.shape[0], iml.shape[2]))
+	cdef double x, y
+	cdef float rx, ry
+	cdef float offsetX, offsetY
+	cdef int offsetNum
+
+	cdef np.ndarray[np.uint8_t, ndim=2] temp = np.empty((4, iml.shape[2]), dtype=np.uint8)
+
+	for offsetNum in range(supportOffsets.shape[0]):
+		offsetX = supportOffsets[offsetNum, 0]
+		offsetY = supportOffsets[offsetNum, 1]
 
 		#Apply rotation (anti-clockwise)
 		rx = math.cos(rotation) * offsetX - math.sin(rotation) * offsetY
@@ -56,10 +64,11 @@ def GetPixIntensityAtLoc(iml, supportOffsets, float locx, float locy, float rota
 		try:
 			x = rx + locx
 			y = ry + locy
-			out.append(BilinearSample(iml, x, y))
+			out[offsetNum,:] = BilinearSample(iml, x, y)
 		except IndexError:
 			return None
 	return out
+
 
 def ITUR6012(col): #ITU-R 601-2
 	return 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
