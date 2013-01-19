@@ -392,11 +392,21 @@ class RelTracker:
 		self.serialTraining = None
 
 	def GetProgress(self):
-		if self.scalePredictors is not None: return 1
-		return 0
+
+		if self.scalePredictors is None:
+			return 0.
+		countDone = 1 #Counting the scale predictor initialisation as a valid step
+		countTotal = 1
+		for layerNum, layer in enumerate(self.scalePredictors):
+			for relaxis in layer:
+				countDone += relaxis.TrainingComplete()
+				countTotal += 1
+		return float(countDone) / countTotal
 		
 	def Update(self):
-		self.Train()
+		if self.GetProgress() >= 1.:
+			return
+		self.ProgressTraining()
 
 #************************************************************
 
