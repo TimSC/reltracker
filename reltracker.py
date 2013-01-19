@@ -3,7 +3,7 @@ from PIL import Image
 import time, math, pickle, sys, os, copy
 import numpy as np
 import sklearn.ensemble as ensemble
-from relutil import GetPixIntensityAtLoc, ToGrey
+from relutil import GetPixIntensityAtLoc, NumpyArrToGrey
 
 #******* Utility functions
 
@@ -66,7 +66,7 @@ class RelAxis:
 		greyPix = np.empty((len(self.trainInt), len(self.trainInt[0])))
 		for rowNum, trainIntensity in enumerate(self.trainInt):
 			for pixNum, col in enumerate(trainIntensity):
-				greyPix[rowNum, pixNum] = ToGrey(col)
+				greyPix[rowNum, pixNum] = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
 
 		#Calculate relative position of other points in cloud
 		#Note: this implementation is not efficiant as the distances are
@@ -141,9 +141,10 @@ class RelAxis:
 			raise Exception("Pixel intensities could not be determined")
 
 		#Convert to grey scale
-		greyPix = []
-		for col in pix:
-			greyPix.append(ToGrey(col))
+		#greyPix = []
+		#for col in pix:
+		#	greyPix.append(0.299*col[0] + 0.587*col[1] + 0.114*col[2])
+		greyPix = NumpyArrToGrey(pix)
 
 		#Calculate relative distances to cloud
 		cloudPosOnFrame = []
@@ -230,7 +231,7 @@ class RelTracker:
 		Add an annotated frame with a set of tracker positions for later 
 		training of the regression model.
 		"""
-		if im.mode != "RGB" and im.mode != "L": 
+		if im.mode != "RGB": 
 			im = im.convert("RGB")
 
 		self.trainingData.append((im, pos))
@@ -382,7 +383,7 @@ class RelTracker:
 
 		assert self.scalePredictors is not None #Train the model first!
 		assert len(pos) == len(self.scalePredictors[0]) / 2
-		if im.mode != "RGB" and im.mode != "L": 
+		if im.mode != "RGB": 
 			im = im.convert("RGB")
 		currentPos = copy.deepcopy(pos)
 		

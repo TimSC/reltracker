@@ -67,12 +67,12 @@ if __name__ == "__main__":
 		print "Usage:",sys.argv[0],"markedPositions.dat testPositions.dat /path/to/images"
 		exit(0)
 	
-	outFi = open("evalparam2posrot.txt","wt")
+	outFi = open("evalparam-numsupppix.txt","wt")
 	for i in [10,20,40,80,160,300,500]:
 		settings = [{'shapeNoise':12, 'cloudEnabled':1, 'supportMaxOffset':39, 'trainVarianceOffset': 41,\
-					'rotationVar': 0.1, 'numTrainingOffsets':5000, 'numSupportPix':i}, \
+					'rotationVar': 0.1, 'numTrainingOffsets':2000, 'numSupportPix':i}, \
 					{'shapeNoise':100, 'cloudEnabled':0, 'supportMaxOffset':20, 'trainVarianceOffset': 5,\
-					'rotationVar': 0.1, 'numTrainingOffsets':5000, 'numSupportPix':i}]
+					'rotationVar': 0.1, 'numTrainingOffsets':2000, 'numSupportPix':i}]
 
 		errs = EvalParam(settings)
 		outFi.write("Settings:"+str(settings)+"\n")
