@@ -268,7 +268,7 @@ class RelTracker:
 		self.trainingIntLayers = None
 		self.trainVarianceOffset = [41, 5]
 		self.rotationVar = [0., 0.]
-		self.numTrainingOffsets = [5000, 5000]
+		self.numTrainingOffsets = [500, 500] #[5000, 5000]
 		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'trainVarianceOffset': 41},
 				{'shapeNoise':100, 'cloudEnabled':0}]
 
@@ -314,23 +314,20 @@ class RelTracker:
 			trPos = pos[trNum]
 			iml = im.load()
 
-			#for train in range(layerNumTrainingOffsets/len(self.trainingData)):
-			if 1:
+			trainRotation = np.random.randn() * layerRotationVar
+			trainOffset = np.random.randn(2) * layerTrainVarOffset
 
-				trainRotation = np.random.randn() * layerRotationVar
-				trainOffset = np.random.randn(2) * layerTrainVarOffset
+			offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
 
-				offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
+			pix = GetPixIntensityAtLoc(iml, supportPixOffset, offset, trainRotation)
+			if pix is None:
+				#Pixel is outside of image: discard this training offset
+				continue
 
-				pix = GetPixIntensityAtLoc(iml, supportPixOffset, offset, trainRotation)
-				if pix is None:
-					#Pixel is outside of image: discard this training offset
-					continue
-
-				outTrainInt.append(pix)
-				outTrainOffsets.append(trainOffset)
-				outTrainRot.append(trainRotation)
-				outTrainFra.append(frameNum)
+			outTrainInt.append(pix)
+			outTrainOffsets.append(trainOffset)
+			outTrainRot.append(trainRotation)
+			outTrainFra.append(frameNum)
 
 		return outTrainInt, outTrainOffsets, outTrainRot, outTrainFra
 
