@@ -12,10 +12,10 @@ cdef BilinearSample(imgPix, float x, float y):
 	yfrac, yi = math.modf(y)
 
 	#Get surrounding pixels
-	p00 = imgPix[xi,yi]
-	p10 = imgPix[xi+1.,yi]
-	p01 = imgPix[xi,yi+1]
-	p11 = imgPix[xi+1.,yi+1.]
+	p00 = imgPix[yi,xi,:]
+	p10 = imgPix[yi,xi+1,:]
+	p01 = imgPix[yi+1,xi,:]
+	p11 = imgPix[yi+1,xi+1,:]
 
 	#If a single number has been returned, convert to list
 	if not hasattr(p00, '__iter__'): p00 = [p00]
