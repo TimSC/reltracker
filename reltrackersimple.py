@@ -73,10 +73,10 @@ def ToGrey(col):
 
 #*******************************************************************************
 
-class RelAxis:
+class RelAxisSimple:
 	"""
-	RelAxis represents a regression model in a particular axis. A tracking
-	point generally requires (at least) two RelAxis objects for 2D tracking.
+	RelAxisSimple represents a regression model in a particular axis. A tracking
+	point generally requires (at least) two RelAxisSimple objects for 2D tracking.
 	"""
 
 	def __init__(self):
@@ -140,9 +140,7 @@ class RelAxis:
 				trainOffsetsY.append(trainOffset[1])
 				trainRotations.append(trainRotation)
 				trainOnFrameNum.append(frameNum)
-			if self.verbose: 
-				print len(trainPix)
-				sys.stdout.flush()
+			if self.verbose: print len(trainPix)
 		numValidTraining = len(trainPix)
 		assert numValidTraining > 0
 
@@ -156,9 +154,7 @@ class RelAxis:
 		#Note: this implementation is not efficiant as the distances are
 		#repeatedly recalculated!
 		if self.cloudEnabled: 
-			if self.verbose: 
-				print "Calc distances"
-				sys.stdout.flush()
+			if self.verbose: print "Calc distances"
 			trainCloudPos = []
 			for frameNum, offsetX, offsetY, rotation in \
 				zip(trainOnFrameNum, trainOffsetsX, trainOffsetsY, trainRotations):
@@ -252,19 +248,13 @@ class RelAxis:
 		else: axisNum = 1
 
 		#Adjust position
-		if not isinstance(currentPos[self.trackerNum], list): #Ensure this is a list
-			currentPos[self.trackerNum] = list(currentPos[self.trackerNum])
 		currentPos[self.trackerNum][axisNum] -= pred
 
 		return currentPos
-	
-	def TrainingComplete(self):
-		if self.reg is not None: return True
-		return False
 
 #****************************************************
 
-class RelTracker:
+class RelTrackerSimple:
 	"""
 	An implementation of "Non-linear Predictors for Facial feature Tracking 
 	across Pose and Expression". This class contains multiple regression
@@ -273,6 +263,9 @@ class RelTracker:
 	The name reltracker comes from RELative Tracker, because the relative
 	positions of the other tracking points are included in the prediction
 	model.
+
+	This version has the basic functionality of the tracker but	simplicity has
+	been chosen over speed and flexibility considerations.
 
 	1) Add some annotated frames using Add()
 	2) Train a model by Train()
@@ -290,9 +283,6 @@ class RelTracker:
 		self.trainingData = []
 		self.numIterations = 5
 		self.scalePredictors = None
-		self.serialTraining = None
-		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'supportMaxOffset':39, 'trainVarianceOffset': 41, 'rotationVar': 0.},
-				{'shapeNoise':100, 'cloudEnabled':0, 'supportMaxOffset':20, 'trainVarianceOffset': 5, 'rotationVar': 0.}]
 
 	def Add(self, im, pos):
 		"""
@@ -322,46 +312,50 @@ class RelTracker:
 		used for each tracking point.)
 		"""
 
-		while self.GetProgress() < 1.:
-			self.ProgressTraining()
-
-	def ProgressTraining(self):
-
 		assert(len(self.trainingData)>0)
+
 		numTrackers = len(self.trainingData[0][1])
+		self.scalePredictors = []
 
-		if self.scalePredictors is None:
-			self.scalePredictors = []
+		#First layer of hierarchy
+		layer = []
+		for trNum in range(numTrackers):
+			for axis in ['x', 'y']:
+				relaxis = RelAxisSimple()
+				relaxis.trackerNum = trNum
+				relaxis.axis = axis
+				relaxis.shapeNoise = 12
+				relaxis.cloudEnabled = 1
+				relaxis.supportMaxOffset = 39
+				relaxis.trainVarianceOffset = 41
+				relaxis.rotationVar = 0.
+				for td in self.trainingData:
+					relaxis.Add(*td)
+				layer.append(relaxis)
+		self.scalePredictors.append(layer)
 
-			#For each layer of hierarchy
-			for layerSettings in self.settings:
-				layer = []
-				#For each tracker
-				for trNum in range(numTrackers):
-
-					#Create two axis trackers
-					for axis in ['x', 'y']:
-						relaxis = RelAxis()
-						relaxis.trackerNum = trNum
-						relaxis.axis = axis
-						for settingKey in layerSettings:
-							setattr(relaxis, settingKey, layerSettings[settingKey])
-						for td in self.trainingData:
-							relaxis.Add(*td)
-						layer.append(relaxis)
-				self.scalePredictors.append(layer)
-			return
+		#Second layer of hierarchy
+		layer = []
+		for trNum in range(numTrackers):
+			for axis in ['x', 'y']:
+				relaxis = RelAxisSimple()
+				relaxis.trackerNum = trNum
+				relaxis.axis = axis
+				relaxis.cloudEnabled = 0
+				relaxis.supportMaxOffset = 20
+				relaxis.trainVarianceOffset = 5
+				relaxis.rotationVar = 0.
+				for td in self.trainingData:
+					relaxis.Add(*td)
+				layer.append(relaxis)
+		self.scalePredictors.append(layer)
 		
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
-				if relaxis.TrainingComplete(): continue #Skip completed trackers
-
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
-				sys.stdout.flush()
 				relaxis.Train()
-				return
-				
+
 	def Predict(self, im, pos):
 		"""
 		Request predictions based on a specified image and tracker position arrangement. The
@@ -388,47 +382,7 @@ class RelTracker:
 					currentPos = relaxis.Predict(im, currentPos)
 
 		return currentPos
-
-	def PrepareForPickle(self):
-		assert self.serialTraining is None
-		self.serialTraining = []
-		for im, pos in self.trainingData:
-			self.serialTraining.append((dict(data=im.tostring(), size=im.size, mode=im.mode), pos))
-		self.ClearTraining()
-
-	def PostUnPickle(self):
-		assert self.serialTraining is not None
-		self.trainingData = []
-		for imDat, pos in self.serialTraining:
-			im = Image.fromstring(**imDat)
-			self.trainingData.append((im, pos))
-
-		#Set training data in axis objects
-		for layerNum, layer in enumerate(self.scalePredictors):
-			for relaxis in layer:
-				relaxis.ClearTraining()
-				for tr in self.trainingData:
-					relaxis.Add(*tr)
-
-		self.serialTraining = None
-
-	def GetProgress(self):
-
-		if self.scalePredictors is None:
-			return 0.
-		countDone = 1 #Counting the scale predictor initialisation as a valid step
-		countTotal = 1
-		for layerNum, layer in enumerate(self.scalePredictors):
-			for relaxis in layer:
-				countDone += relaxis.TrainingComplete()
-				countTotal += 1
-		return float(countDone) / countTotal
 		
-	def Update(self):
-		if self.GetProgress() >= 1.:
-			return
-		self.ProgressTraining()
-
 #************************************************************
 
 if __name__ == "__main__":
@@ -440,14 +394,13 @@ if __name__ == "__main__":
 	posData = ReadPosData(sys.argv[1])
 
 	if 1:
-		reltracker = RelTracker()
+		reltracker = RelTrackerSimple()
 
 		#Add training data to tracker
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
 			assert os.path.exists(imgFina)
 			print ti, imgFina
-			
 			im = Image.open(imgFina)
 
 			reltracker.Add(im, posData[ti])

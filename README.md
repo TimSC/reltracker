@@ -5,6 +5,10 @@ Implementation of: Tim Sheerman-Chase, Eng-Jon Ong, Richard Bowden. Non-linear P
 for Facial feature Tracking across Pose and Expression. In IEEE 
 Conference on Automatic Face and Gesture Recognition, Shanghai, 2013.
 
+reltracker.py contains the main class RelTracker.
+
+reltrackersimple.py is a simplified implementation without speed optimisation and less flexibility.
+
 Copyright (C) 2013 Tim Sheerman-Chase
 
 This program is free software; you can redistribute it and/or
