@@ -421,15 +421,18 @@ class RelTracker:
 					self.trainingRotLayers[-1].append([])
 
 
-		for layerNum, (layer, layerSupportPixOffset, trainingIntLayer) in \
-			enumerate(zip(self.scalePredictors, self.supportPixOffset, self.trainingIntLayers)):
-			for trNum, supportPixOffset in enumerate(layerSupportPixOffset):
+		for layerNum, (layer, layerSupportPixOffset, trainingIntLayer, trainingIntsL, trainingOffL, trainingRotL) in \
+			enumerate(zip(self.scalePredictors, self.supportPixOffset, self.trainingIntLayers, 
+				self.trainingIntLayers, self.trainingOffLayers, self.trainingRotLayers)):
+			for trNum, (supportPixOffset, ints, offs, rots) in enumerate(zip(layerSupportPixOffset, trainingIntsL, trainingOffL, trainingRotL)):
 				if len(self.trainingIntLayers[layerNum]) > 0:
 					continue #Skip completed tracker's intensities
 
 				trainInt, trainOffsets, trainRot = self.GenerateTrainingIntensities(layerNum, trNum, supportPixOffset)
 				
-				trainingIntLayer.append(supportInt)
+				ints.extend(supportInt)
+				offs.extend(trainOffsets)
+				rots.extend(trainRot)
 
 	
 		#Train individual axis predictors
