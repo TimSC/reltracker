@@ -3,34 +3,9 @@ from PIL import Image
 import time, math, pickle, sys, os, copy
 import numpy as np
 import sklearn.ensemble as ensemble
+from relutil import GetPixIntensityAtLoc, ToGrey
 
 #******* Utility functions
-
-def BilinearSample(imgPix, x, y):
-	xfrac, xi = math.modf(x)
-	yfrac, yi = math.modf(y)
-
-	#Get surrounding pixels
-	p00 = imgPix[xi,yi]
-	p10 = imgPix[xi+1,yi]
-	p01 = imgPix[xi,yi+1]
-	p11 = imgPix[xi+1,yi+1]
-
-	#If a single number has been returned, convert to list
-	if not hasattr(p00, '__iter__'): p00 = [p00]
-	if not hasattr(p10, '__iter__'): p10 = [p10]
-	if not hasattr(p01, '__iter__'): p01 = [p01]
-	if not hasattr(p11, '__iter__'): p11 = [p11]
-
-	#Interpolate colour
-	c1 = [p00c * (1.-xfrac) + p10c * xfrac for p00c, p10c in zip(p00, p10)]
-	c2 = [p01c * (1.-xfrac) + p11c * xfrac for p01c, p11c in zip(p01, p11)]
-	col = [c1c * (1.-yfrac) + c2c * yfrac for c1c, c2c in zip(c1, c2)]
-
-	return col
-
-def ITUR6012(col): #ITU-R 601-2
-	return 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
 
 def ReadPosData(fina):
 	data = open(fina).readlines()
@@ -49,27 +24,6 @@ def ReadPosData(fina):
 
 		pos += 2 + numPts
 	return out
-
-def GetPixIntensityAtLoc(iml, supportOffsets, loc, rotation = 0.):
-	out = []
-	for offset in supportOffsets:
-		#Apply rotation (anti-clockwise)
-		rx = math.cos(rotation) * offset[0] - math.sin(rotation) * offset[1]
-		ry = math.sin(rotation) * offset[0] + math.cos(rotation) * offset[1]
-
-		#Get pixel at this location
-		try:
-			out.append(BilinearSample(iml, rx + loc[0], ry + loc[1]))
-		except IndexError:
-			return None
-	return out
-
-def ToGrey(col):
-	if not hasattr(col, '__iter__'): return col
-	if len(col) == 3:
-		return ITUR6012(col)
-	#Assumed to be already grey scale
-	return col[0]
 
 #*******************************************************************************
 
@@ -113,8 +67,6 @@ class RelAxis:
 		for rowNum, trainIntensity in enumerate(self.trainInt):
 			for pixNum, col in enumerate(trainIntensity):
 				greyPix[rowNum, pixNum] = ToGrey(col)
-
-		print greyPix.shape
 
 		#Calculate relative position of other points in cloud
 		#Note: this implementation is not efficiant as the distances are
@@ -183,7 +135,8 @@ class RelAxis:
 
 		assert self.reg is not None #A regression model must first be trained
 		currentPos = copy.deepcopy(pos)
-		pix = GetPixIntensityAtLoc(im.load(), self.supportPixOffset, currentPos[self.trackerNum])
+		pix = GetPixIntensityAtLoc(im.load(), self.supportPixOffset, 
+			currentPos[self.trackerNum][0], currentPos[self.trackerNum][1])
 		if pix is None:
 			raise Exception("Pixel intensities could not be determined")
 
@@ -263,12 +216,12 @@ class RelTracker:
 		self.scalePredictors = None
 		self.serialTraining = None
 		self.supportPixOffset = []
-		self.numSupportPix = [500, 500]
+		self.numSupportPix = [200, 200] #[500, 500]
 		self.maxSupportOffset = [39, 20]
 		self.trainingIntLayers = None
 		self.trainVarianceOffset = [41, 5]
 		self.rotationVar = [0., 0.]
-		self.numTrainingOffsets = [500, 500] #[5000, 5000]
+		self.numTrainingOffsets = [2000, 2000] #[5000, 5000]
 		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'trainVarianceOffset': 41},
 				{'shapeNoise':100, 'cloudEnabled':0}]
 
@@ -319,7 +272,7 @@ class RelTracker:
 
 			offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
 
-			pix = GetPixIntensityAtLoc(iml, supportPixOffset, offset, trainRotation)
+			pix = GetPixIntensityAtLoc(iml, supportPixOffset, offset[0], offset[1], trainRotation)
 			if pix is None:
 				#Pixel is outside of image: discard this training offset
 				continue
@@ -516,14 +469,18 @@ if __name__ == "__main__":
 		reltracker.Train()
 		reltracker.ClearTraining() #Remove data that cannot be pickled
 
-		pickle.dump(reltracker, open("tracker.dat","wb"), protocol = -1)
+		#reltracker.PrepareForPickle()
+		#print "Pickling"
+		#pickle.dump(reltracker, open("tracker.dat","wb"), protocol = -1)
 
 	if 1:
-		reltracker = pickle.load(open("tracker.dat","rb"))
+		#print "Unpickling"
+		#reltracker = pickle.load(open("tracker.dat","rb"))
+		#reltracker.PostUnPickle()
 
 		frameNum = 0
 		currentPos = None
-		while 1:
+		while frameNum < 400:
 			#Load current frame
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(frameNum)
 			if not os.path.exists(imgFina):
