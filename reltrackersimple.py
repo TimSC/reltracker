@@ -326,7 +326,7 @@ class RelTrackerSimple:
 				relaxis.axis = axis
 				relaxis.shapeNoise = 12
 				relaxis.cloudEnabled = 1
-				relaxis.supportMaxOffset = 39
+				relaxis.maxSupportOffset = 39
 				relaxis.trainVarianceOffset = 41
 				relaxis.rotationVar = 0.
 				for td in self.trainingData:
@@ -342,7 +342,7 @@ class RelTrackerSimple:
 				relaxis.trackerNum = trNum
 				relaxis.axis = axis
 				relaxis.cloudEnabled = 0
-				relaxis.supportMaxOffset = 20
+				relaxis.maxSupportOffset = 20
 				relaxis.trainVarianceOffset = 5
 				relaxis.rotationVar = 0.
 				for td in self.trainingData:

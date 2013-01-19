@@ -80,9 +80,7 @@ class RelAxis:
 	"""
 
 	def __init__(self):
-		self.numSupportPix = 500
 		self.numTrainingOffsets = 5000
-		self.maxSupportOffset = 30
 		self.reg = None
 		self.trainingData = []
 		self.verbose = 1
@@ -90,6 +88,7 @@ class RelAxis:
 		self.cloudEnabled = 1
 		self.trainVarianceOffset = 41
 		self.rotationVar = 0.
+		self.supportPixOffset = None
 
 	def Add(self, im, pos):
 		"""
@@ -111,9 +110,7 @@ class RelAxis:
 		considers a single axis for a single tracking point.
 		"""
 
-		#Generate support pix and training offsets
-		self.supportPixOffset = np.random.uniform(-self.maxSupportOffset, 
-				self.maxSupportOffset, (self.numSupportPix, 2))
+		assert self.supportPixOffset is not None
 
 		#Get pixel intensities at training offsets
 		trainPix = []
@@ -291,8 +288,11 @@ class RelTracker:
 		self.numIterations = 5
 		self.scalePredictors = None
 		self.serialTraining = None
-		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'supportMaxOffset':39, 'trainVarianceOffset': 41, 'rotationVar': 0.},
-				{'shapeNoise':100, 'cloudEnabled':0, 'supportMaxOffset':20, 'trainVarianceOffset': 5, 'rotationVar': 0.}]
+		self.supportPixOffset = []
+		self.numSupportPix = [500, 500]
+		self.maxSupportOffset = [39, 20]
+		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'trainVarianceOffset': 41, 'rotationVar': 0.},
+				{'shapeNoise':100, 'cloudEnabled':0, 'trainVarianceOffset': 5, 'rotationVar': 0.}]
 
 	def Add(self, im, pos):
 		"""
@@ -332,24 +332,35 @@ class RelTracker:
 
 		if self.scalePredictors is None:
 			self.scalePredictors = []
+			self.supportPixOffset = []
 
 			#For each layer of hierarchy
-			for layerSettings in self.settings:
+			for layerSettings, layerNumSupportPix, layerMaxSupportOffset \
+				in zip(self.settings, self.numSupportPix, self.maxSupportOffset):
 				layer = []
+				layerPixOffset = []
+
 				#For each tracker
 				for trNum in range(numTrackers):
+
+					trSupportPixOffset = np.random.uniform(-self.layerMaxSupportOffset, 
+						self.layerMaxSupportOffset, (self.layerNumSupportPix, 2))
+					layerPixOffset.append(trSupportPixOffset)
 
 					#Create two axis trackers
 					for axis in ['x', 'y']:
 						relaxis = RelAxis()
 						relaxis.trackerNum = trNum
 						relaxis.axis = axis
+						relaxis.supportPixOffset = trSupportPixOffset
 						for settingKey in layerSettings:
 							setattr(relaxis, settingKey, layerSettings[settingKey])
 						for td in self.trainingData:
 							relaxis.Add(*td)
 						layer.append(relaxis)
+
 				self.scalePredictors.append(layer)
+				self.supportPixOffset.append(layerPixOffset)
 			return
 		
 		#Train individual axis predictors
