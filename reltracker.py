@@ -80,14 +80,11 @@ class RelAxis:
 	"""
 
 	def __init__(self):
-		self.numTrainingOffsets = 5000
 		self.reg = None
 		self.trainingData = []
 		self.verbose = 1
 		self.shapeNoise = 12
 		self.cloudEnabled = 1
-		self.trainVarianceOffset = 41
-		self.rotationVar = 0.
 		self.supportPixOffset = None
 
 	def Add(self, im, pos):
