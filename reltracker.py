@@ -268,7 +268,7 @@ class RelTracker:
 		self.trainingIntLayers = None
 		self.trainVarianceOffset = [41, 5]
 		self.rotationVar = [0., 0.]
-		self.numTrainingOffsets = [500, 500] #[5000, 5000]
+		self.numTrainingOffsets = [5000, 5000]
 		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'trainVarianceOffset': 41},
 				{'shapeNoise':100, 'cloudEnabled':0}]
 
