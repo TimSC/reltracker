@@ -38,7 +38,6 @@ class RelAxis:
 		self.trainingData = []
 		self.verbose = 1
 		self.shapeNoise = 12
-		self.cloudEnabled = 1
 		self.supportPixOffset = None
 
 	def Add(self, im, pos):
@@ -69,9 +68,11 @@ class RelAxis:
 		considers a single axis for a single tracking point.
 		"""
 		assert self.supportPixOffset is not None
-		assert self.cloudEnabled == (self.cloudData is not None)
 
 		#Convert training data to grey scale, numpy array
+		if self.verbose: 
+			print "Converting training data to grey scale"
+			sys.stdout.flush()
 		greyPix = self.TrainConvertToGrey(self.trainInt)
 
 		#Calculate relative position of other points in cloud
@@ -83,9 +84,8 @@ class RelAxis:
 			for frameNum, offset, rotation in \
 				zip(self.trainFra, self.trainOff, self.trainRot):
 				cloudPosOnFrame = []
-				posOnFrame = self.trainingData[frameNum][1]
 				cloudDataFr = self.cloudData[frameNum]
-				for trNum, pos in enumerate(zip(posOnFrame)):
+				for trNum, pos in enumerate(cloudDataFr):
 					if trNum == self.trackerNum:
 						continue #Skip distance to self
 
@@ -115,6 +115,10 @@ class RelAxis:
 			trainCloudPos = np.array(trainCloudPos)
 			trainCloudPos = trainCloudPos + np.random.randn(*trainCloudPos.shape) * self.shapeNoise
 
+			if self.verbose: 
+				print "Calc distances done"
+				sys.stdout.flush()
+
 		#Select axis labels
 		trainOffArr = np.array(self.trainOff)
 		if self.axis == "x":
@@ -123,7 +127,7 @@ class RelAxis:
 			labels = trainOffArr[:,1]
 	
 		#If selected, merge the cloud position data with pixel intensities
-		if self.cloudEnabled:
+		if self.cloudData is not None:
 			trainDataFinal = np.hstack((greyPix, trainCloudPos))
 		else:
 			trainDataFinal = greyPix
@@ -161,7 +165,7 @@ class RelAxis:
 			else:
 				cloudPosOnFrame.append(ydiff)
 
-		if self.cloudEnabled:
+		if self.cloudData is not None:
 			testData = np.concatenate((greyPix, cloudPosOnFrame))
 		else:
 			testData = greyPix
@@ -227,8 +231,7 @@ class RelTracker:
 		self.trainVarianceOffset = [41, 5]
 		self.rotationVar = [0., 0.]
 		self.numTrainingOffsets = [2000, 2000] #[5000, 5000]
-		self.settings = [{'shapeNoise':12, 'cloudEnabled':1, 'trainVarianceOffset': 41},
-				{'shapeNoise':100, 'cloudEnabled':0}]
+		self.settings = [{},{}]
 
 	def Add(self, im, pos):
 		"""
@@ -291,13 +294,11 @@ class RelTracker:
 	def GenerateCloudDistances(self, layerNum):
 		#Calculate relative position of other points in cloud
 		cloudDataLayer = []
-		for fromTrNum, fromPos in enumerate(self.trainingData[0]):
+		for fromTrNum, fromPos in enumerate(self.trainingData[0][1]):
 			trainCloudPos = []
 			for im, posOnFrame in self.trainingData:
 				trackerDis = []
 				for toTrNum, toPos in enumerate(posOnFrame):
-					#if toTrNum == fromTrNum:
-					#	continue #Skip distance to self
 
 					#Calculate unrotated diff vector to cloud position
 					diffX = posOnFrame[toTrNum][0] - posOnFrame[fromTrNum][0]
@@ -351,11 +352,12 @@ class RelTracker:
 		if self.cloudData is None:
 			self.cloudData = []
 			for layerNum, (layer, cel) in enumerate(zip(self.scalePredictors, self.cloudEnabled)):
+				self.cloudData.append([])
 				if cel: 
-					self.cloudData.append([])
 					self.GenerateCloudDistances(layerNum)
 				else:
-					self.cloudData.append(None)
+					for im, pos in self.trainingData[0][1]:
+						self.cloudData[-1].append(None)
 
 		#Generate support pixel intensity container structure
 		if self.trainingIntLayers is None:
