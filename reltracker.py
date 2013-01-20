@@ -158,7 +158,7 @@ class RelAxis:
 			else:
 				cloudPosOnFrame.append(ydiff)
 
-		if self.cloudData is not None:
+		if self.cloudEnabled:
 			testData = np.concatenate((greyPix, cloudPosOnFrame))
 		else:
 			testData = greyPix
