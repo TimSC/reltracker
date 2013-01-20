@@ -3,7 +3,7 @@ from PIL import Image
 import time, math, pickle, sys, os, copy
 import numpy as np
 import sklearn.ensemble as ensemble
-from relutil import GetPixIntensityAtLoc, NumpyArrToGrey
+from relutil import GetPixIntensityAtLoc, NumpyArrToGrey, TrainConvertToGrey
 
 #******* Utility functions
 
@@ -54,14 +54,6 @@ class RelAxis:
 		"""
 		self.trainingData = []
 
-	def TrainConvertToGrey(self, data):
-		#Convert to grey scale, numpy array
-		greyPix = np.empty((len(data), len(data[0])))
-		for rowNum, trainIntensity in enumerate(data):
-			for pixNum, col in enumerate(trainIntensity):
-				greyPix[rowNum, pixNum] = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
-		return greyPix
-
 	def Train(self):
 		"""
 		Train a regression model based on the added training data. This class only
@@ -73,7 +65,7 @@ class RelAxis:
 		if self.verbose: 
 			print "Converting training data to grey scale"
 			sys.stdout.flush()
-		greyPix = self.TrainConvertToGrey(self.trainInt)
+		greyPix = TrainConvertToGrey(self.trainInt)
 
 		#Calculate relative position of other points in cloud
 		if self.cloudData is not None:

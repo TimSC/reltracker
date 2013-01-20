@@ -81,3 +81,11 @@ def NumpyArrToGrey(np.ndarray[np.float64_t, ndim=2] pix):
 		greyPix[i] = 0.299*pix[i,0] + 0.587*pix[i,1] + 0.114*pix[i,2]
 	return greyPix
 
+def TrainConvertToGrey(data):
+	#Convert to grey scale, numpy array
+	cdef np.ndarray[np.float64_t, ndim=2] greyPix = np.empty((len(data), len(data[0])))
+	for rowNum, trainIntensity in enumerate(data):
+		for pixNum, col in enumerate(trainIntensity):
+			greyPix[rowNum, pixNum] = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
+	return greyPix
+
