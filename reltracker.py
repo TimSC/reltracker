@@ -25,6 +25,17 @@ def ReadPosData(fina):
 		pos += 2 + numPts
 	return out
 
+def DrawMarker(iml, posData):
+	if posData is None: return
+	for pos in posData:
+		for i in [-1,0,+1]:
+			for j in [-1,0,+1]:
+				col = (255,255,255)
+				try:
+					iml[int(round(pos[0]+i)),int(round(pos[1]+j))] = col
+				except:
+					pass
+
 #*******************************************************************************
 
 class RelAxis:
@@ -220,6 +231,7 @@ class RelTracker:
 		self.supportPixOffset = []
 		self.numSupportPix = [200, 200] #[500, 500]
 		self.maxSupportOffset = [39, 20]
+		self.saveTrainingFrames = False
 
 		self.trainVarianceOffset = [41, 5]
 		self.rotationVar = [0., 0.]
@@ -233,6 +245,12 @@ class RelTracker:
 		"""
 		if im.mode != "RGB": 
 			im = im.convert("RGB")
+
+		if self.saveTrainingFrames:
+			#Visualise tracking
+			iml = im.load()
+			DrawMarker(iml, pos)
+			im.save("training{0:05d}.jpg".format(len(self.trainingData)))
 
 		self.trainingData.append((im, pos))
 		assert(len(self.trainingData[0][1]) == len(self.trainingData[-1][1]))
@@ -521,7 +539,7 @@ if __name__ == "__main__":
 
 		frameNum = 0
 		currentPos = None
-		while frameNum < 400:
+		while 1:
 			#Load current frame
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(frameNum)
 			if not os.path.exists(imgFina):
@@ -542,16 +560,7 @@ if __name__ == "__main__":
 			
 			#Visualise tracking
 			iml = im.load()
-			if currentPos is not None: 
-				for pos in currentPos:
-					for i in [-1,0,+1]:
-						for j in [-1,0,+1]:
-							col = (255,255,255)
-							if len(im.mode)==1: col = 255
-							try:
-								iml[int(round(pos[0]+i)),int(round(pos[1]+j))] = col
-							except:
-								pass
+			DrawMarker(iml, currentPos)
 			im.save("{0:05d}.jpg".format(frameNum))
 	
 			#Go to next frame
