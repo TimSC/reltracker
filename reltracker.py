@@ -69,9 +69,7 @@ class RelAxis:
 				greyPix[rowNum, pixNum] = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
 
 		#Calculate relative position of other points in cloud
-		#Note: this implementation is not efficiant as the distances are
-		#repeatedly recalculated!
-		if self.cloudEnabled: 
+		if self.cloudData is not None:
 			if self.verbose: 
 				print "Calc distances"
 				sys.stdout.flush()
@@ -83,6 +81,9 @@ class RelAxis:
 				for trNum, pos in enumerate(posOnFrame):
 					if trNum == self.trackerNum:
 						continue #Skip distance to self
+
+					cloudPosTr = self.cloudData[trNum]
+					print cloudPosTr
 
 					#Rotate training offset vector
 					offsetRX = math.cos(rotation) * offset[0] - math.sin(rotation) * offset[1]
@@ -346,10 +347,11 @@ class RelTracker:
 		if self.cloudData is None:
 			self.cloudData = []
 			for layerNum, (layer, cel) in enumerate(zip(self.scalePredictors, self.cloudEnabled)):
-				self.cloudData.append([])
 				if cel: 
+					self.cloudData.append([])
 					self.GenerateCloudDistances(layerNum)
-		exit(0)
+				else:
+					self.cloudData.append(None)
 
 		#Generate support pixel intensity container structure
 		if self.trainingIntLayers is None:
