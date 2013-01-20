@@ -141,9 +141,6 @@ class RelAxis:
 			raise Exception("Pixel intensities could not be determined")
 
 		#Convert to grey scale
-		#greyPix = []
-		#for col in pix:
-		#	greyPix.append(0.299*col[0] + 0.587*col[1] + 0.114*col[2])
 		greyPix = NumpyArrToGrey(pix)
 
 		#Calculate relative distances to cloud
@@ -212,6 +209,8 @@ class RelTracker:
 		self.trainingOffLayers = []
 		self.trainingRotLayers = []
 		self.trainingFraLayers = []
+		self.cloudData = None
+		self.cloudEnabled = [1, 0]
 
 		self.numIterations = 5
 		self.scalePredictors = None
@@ -284,6 +283,27 @@ class RelTracker:
 
 		return outTrainInt, outTrainOffsets, outTrainRot, outTrainFra
 
+	def GenerateCloudDistances(self, layerNum):
+		#Calculate relative position of other points in cloud
+		cloudDataLayer = []
+		for im, posOnFrame in self.trainingData:
+			trainCloudPos = []
+			for fromTrNum, fromPos in enumerate(posOnFrame):
+				trackerDis = []
+				for toTrNum, toPos in enumerate(posOnFrame):
+					if toTrNum == fromTrNum:
+						continue #Skip distance to self
+
+					#Calculate unrotated diff vector to cloud position
+					diffX = posOnFrame[toTrNum][0] - posOnFrame[fromTrNum][1]
+					diffY = posOnFrame[toTrNum][0] - posOnFrame[fromTrNum][1]
+
+					trackerDis.append((diffX, diffY))
+
+				trainCloudPos.append(trackerDis)
+
+			cloudDataLayer.append(trainCloudPos)
+		self.cloudData[layerNum] = np.array(cloudDataLayer)
 
 	def ProgressTraining(self):
 
@@ -323,6 +343,14 @@ class RelTracker:
 				self.supportPixOffset.append(layerPixOffset)
 			return
 	
+		if self.cloudData is None:
+			self.cloudData = []
+			for layerNum, (layer, cel) in enumerate(zip(self.scalePredictors, self.cloudEnabled)):
+				self.cloudData.append([])
+				if cel: 
+					self.GenerateCloudDistances(layerNum)
+		exit(0)
+
 		#Generate support pixel intensity container structure
 		if self.trainingIntLayers is None:
 			self.trainingIntLayers = []
