@@ -83,6 +83,7 @@ def NumpyArrToGrey(np.ndarray[np.float64_t, ndim=2] pix):
 
 def TrainConvertToGrey(data):
 	#Convert to grey scale, numpy array
+	cdef int rowNum, pixNum
 	cdef np.ndarray[np.float64_t, ndim=2] greyPix = np.empty((len(data), len(data[0])))
 	for rowNum, trainIntensity in enumerate(data):
 		for pixNum, col in enumerate(trainIntensity):

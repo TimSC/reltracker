@@ -38,6 +38,7 @@ class RelAxis:
 		self.trainingData = []
 		self.verbose = 1
 		self.shapeNoise = 12
+		self.cloudEnabled = 1
 		self.supportPixOffset = None
 
 	def Add(self, im, pos):
@@ -68,7 +69,7 @@ class RelAxis:
 		greyPix = TrainConvertToGrey(self.trainInt)
 
 		#Calculate relative position of other points in cloud
-		if self.cloudData is not None:
+		if self.cloudEnabled:
 			if self.verbose: 
 				print "Calc distances"
 				sys.stdout.flush()
@@ -119,7 +120,7 @@ class RelAxis:
 			labels = trainOffArr[:,1]
 	
 		#If selected, merge the cloud position data with pixel intensities
-		if self.cloudData is not None:
+		if self.cloudEnabled:
 			trainDataFinal = np.hstack((greyPix, trainCloudPos))
 		else:
 			trainDataFinal = greyPix
@@ -283,7 +284,7 @@ class RelTracker:
 
 		return outTrainInt, outTrainOffsets, outTrainRot, outTrainFra
 
-	def GenerateCloudDistances(self, layerNum):
+	def GenerateCloudDistances(self):
 		#Calculate relative position of other points in cloud
 		cloudDataLayer = []
 		for fromTrNum, fromPos in enumerate(self.trainingData[0][1]):
@@ -301,7 +302,7 @@ class RelTracker:
 				trainCloudPos.append(trackerDis)
 
 			cloudDataLayer.append(trainCloudPos)
-		self.cloudData[layerNum] = np.array(cloudDataLayer)
+		return np.array(cloudDataLayer)
 
 	def ProgressTraining(self):
 
@@ -342,14 +343,7 @@ class RelTracker:
 			return
 	
 		if self.cloudData is None:
-			self.cloudData = []
-			for layerNum, (layer, cel) in enumerate(zip(self.scalePredictors, self.cloudEnabled)):
-				self.cloudData.append([])
-				if cel: 
-					self.GenerateCloudDistances(layerNum)
-				else:
-					for im, pos in self.trainingData[0][1]:
-						self.cloudData[-1].append(None)
+			self.cloudData = self.GenerateCloudDistances()
 
 		#Generate support pixel intensity container structure
 		if self.trainingIntLayers is None:
@@ -405,7 +399,8 @@ class RelTracker:
 				relaxis.trainOff = self.trainingOffLayers[layerNum][relaxis.trackerNum]
 				relaxis.trainRot = self.trainingRotLayers[layerNum][relaxis.trackerNum]
 				relaxis.trainFra = self.trainingFraLayers[layerNum][relaxis.trackerNum]
-				relaxis.cloudData = self.cloudData[layerNum][relaxis.trackerNum]
+				relaxis.cloudData = self.cloudData[relaxis.trackerNum]
+				relaxis.cloudEnabled = self.cloudEnabled[layerNum]
 
 				relaxis.Train()
 				return
