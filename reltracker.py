@@ -207,7 +207,7 @@ class RelTracker:
 	def __init__(self):
 		self.trainingData = []
 
-		self.trainingIntLayers = []
+		self.trainingIntLayers = None
 		self.trainingOffLayers = []
 		self.trainingRotLayers = []
 		self.trainingFraLayers = []
@@ -220,7 +220,7 @@ class RelTracker:
 		self.supportPixOffset = []
 		self.numSupportPix = [200, 200] #[500, 500]
 		self.maxSupportOffset = [39, 20]
-		self.trainingIntLayers = None
+
 		self.trainVarianceOffset = [41, 5]
 		self.rotationVar = [0., 0.]
 		self.numTrainingOffsets = [2000, 2000] #[5000, 5000]
@@ -358,7 +358,7 @@ class RelTracker:
 				self.trainingRotLayers.append([])
 				self.trainingFraLayers.append([])
 
-				for relaxis in layer:
+				for trPos in self.trainingData[0][1]:
 					self.trainingIntLayers[-1].append([])
 					self.trainingOffLayers[-1].append([])
 					self.trainingRotLayers[-1].append([])
@@ -369,13 +369,12 @@ class RelTracker:
 
 			layerSupportPixOffset = self.supportPixOffset[layerNum]
 			trainingIntLayer = self.trainingIntLayers[layerNum]
-			trainingIntsL = self.trainingIntLayers[layerNum]
 			trainingOffL = self.trainingOffLayers[layerNum]
 			trainingRotL = self.trainingRotLayers[layerNum]
 			trainFraL = self.trainingFraLayers[layerNum]
 
 			for trNum, (supportPixOffset, ints, offs, rots, fra) in \
-				enumerate(zip(layerSupportPixOffset, trainingIntsL, trainingOffL, trainingRotL, trainFraL)):
+				enumerate(zip(layerSupportPixOffset, trainingIntLayer, trainingOffL, trainingRotL, trainFraL)):
 				if len(ints) >= self.numTrainingOffsets[layerNum]:
 					continue #Skip completed tracker's intensities
 
@@ -459,13 +458,25 @@ class RelTracker:
 
 		if self.scalePredictors is None:
 			return 0.
-		countDone = 1 #Counting the scale predictor initialisation as a valid step
-		countTotal = 1
+
+		countDone = 0. #Counting the scale predictor initialisation as a valid step
+		countTotal = 0.
+		
+		#Calculate progress in generating intensities
+		if self.trainingIntLayers is not None:
+			for layerInts, numTrOff in zip(self.trainingIntLayers, self.numTrainingOffsets):
+				for trPixData in layerInts:
+					trackerProg = float(len(trPixData)) / numTrOff
+					if trackerProg > 1.: trackerProg = 1.
+					countDone += trackerProg
+					countTotal += 1.
+
+		#Calculate progress of regressor learning
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
 				countDone += relaxis.TrainingComplete()
-				countTotal += 1
-		return float(countDone) / countTotal
+				countTotal += 1.
+		return countDone / countTotal
 		
 	def Update(self):
 		if self.GetProgress() >= 1.:
