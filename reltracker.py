@@ -55,18 +55,24 @@ class RelAxis:
 		"""
 		self.trainingData = []
 
+	def TrainConvertToGrey(self, data):
+		#Convert to grey scale, numpy array
+		greyPix = np.empty((len(data), len(data[0])))
+		for rowNum, trainIntensity in enumerate(data):
+			for pixNum, col in enumerate(trainIntensity):
+				greyPix[rowNum, pixNum] = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
+		return greyPix
+
 	def Train(self):
 		"""
 		Train a regression model based on the added training data. This class only
 		considers a single axis for a single tracking point.
 		"""
 		assert self.supportPixOffset is not None
+		assert self.cloudEnabled == (self.cloudData is not None)
 
-		#Convert to grey scale, numpy array
-		greyPix = np.empty((len(self.trainInt), len(self.trainInt[0])))
-		for rowNum, trainIntensity in enumerate(self.trainInt):
-			for pixNum, col in enumerate(trainIntensity):
-				greyPix[rowNum, pixNum] = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
+		#Convert training data to grey scale, numpy array
+		greyPix = self.TrainConvertToGrey(self.trainInt)
 
 		#Calculate relative position of other points in cloud
 		if self.cloudData is not None:
@@ -78,20 +84,18 @@ class RelAxis:
 				zip(self.trainFra, self.trainOff, self.trainRot):
 				cloudPosOnFrame = []
 				posOnFrame = self.trainingData[frameNum][1]
-				for trNum, pos in enumerate(posOnFrame):
+				cloudDataFr = self.cloudData[frameNum]
+				for trNum, pos in enumerate(zip(posOnFrame)):
 					if trNum == self.trackerNum:
 						continue #Skip distance to self
-
-					cloudPosTr = self.cloudData[trNum]
-					print cloudPosTr
 
 					#Rotate training offset vector
 					offsetRX = math.cos(rotation) * offset[0] - math.sin(rotation) * offset[1]
 					offsetRY = math.sin(rotation) * offset[0] + math.cos(rotation) * offset[1]
 
 					#Calculate unrotated diff vector to cloud position
-					diffX = pos[0] - (posOnFrame[self.trackerNum][0])
-					diffY = pos[1] - (posOnFrame[self.trackerNum][1])
+					diffX = cloudDataFr[trNum][0]
+					diffY = cloudDataFr[trNum][1]
 
 					#Rotate the cloud position vector
 					diffRX = math.cos(rotation) * diffX - math.sin(rotation) * diffY
@@ -292,12 +296,12 @@ class RelTracker:
 			for im, posOnFrame in self.trainingData:
 				trackerDis = []
 				for toTrNum, toPos in enumerate(posOnFrame):
-					if toTrNum == fromTrNum:
-						continue #Skip distance to self
+					#if toTrNum == fromTrNum:
+					#	continue #Skip distance to self
 
 					#Calculate unrotated diff vector to cloud position
-					diffX = posOnFrame[toTrNum][0] - posOnFrame[fromTrNum][1]
-					diffY = posOnFrame[toTrNum][0] - posOnFrame[fromTrNum][1]
+					diffX = posOnFrame[toTrNum][0] - posOnFrame[fromTrNum][0]
+					diffY = posOnFrame[toTrNum][1] - posOnFrame[fromTrNum][1]
 
 					trackerDis.append((diffX, diffY))
 
