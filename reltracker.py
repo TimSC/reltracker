@@ -286,9 +286,9 @@ class RelTracker:
 	def GenerateCloudDistances(self, layerNum):
 		#Calculate relative position of other points in cloud
 		cloudDataLayer = []
-		for im, posOnFrame in self.trainingData:
+		for fromTrNum, fromPos in enumerate(posOnFrame):
 			trainCloudPos = []
-			for fromTrNum, fromPos in enumerate(posOnFrame):
+			for im, posOnFrame in self.trainingData:
 				trackerDis = []
 				for toTrNum, toPos in enumerate(posOnFrame):
 					if toTrNum == fromTrNum:
@@ -371,9 +371,15 @@ class RelTracker:
 					self.trainingFraLayers[-1].append([])
 
 
-		for layerNum, (layer, layerSupportPixOffset, trainingIntLayer, trainingIntsL, trainingOffL, trainingRotL, trainFraL) in \
-			enumerate(zip(self.scalePredictors, self.supportPixOffset, self.trainingIntLayers, 
-				self.trainingIntLayers, self.trainingOffLayers, self.trainingRotLayers, self.trainingFraLayers)):
+		for layerNum, layer in enumerate(self.scalePredictors):
+
+				layerSupportPixOffset = self.supportPixOffset[layerNum]
+				trainingIntLayer = self.trainingIntLayers[layerNum]
+				trainingIntsL = self.trainingIntLayers[layerNum]
+				trainingOffL = self.trainingOffLayers[layerNum]
+				trainingRotL = self.trainingRotLayers[layerNum]
+				trainFraL = self.trainingFraLayers[layerNum]
+
 			for trNum, (supportPixOffset, ints, offs, rots, fra) in \
 				enumerate(zip(layerSupportPixOffset, trainingIntsL, trainingOffL, trainingRotL, trainFraL)):
 				if len(ints) >= self.numTrainingOffsets[layerNum]:
@@ -399,6 +405,7 @@ class RelTracker:
 				relaxis.trainOff = self.trainingOffLayers[layerNum][relaxis.trackerNum]
 				relaxis.trainRot = self.trainingRotLayers[layerNum][relaxis.trackerNum]
 				relaxis.trainFra = self.trainingFraLayers[layerNum][relaxis.trackerNum]
+				relaxis.cloudData = self.cloudData[layerNum][relaxis.trackerNum]
 
 				relaxis.Train()
 				return
