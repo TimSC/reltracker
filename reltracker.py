@@ -231,7 +231,8 @@ class RelTracker:
 		self.supportPixOffset = []
 		self.numSupportPix = [200, 200] #[500, 500]
 		self.maxSupportOffset = [39, 20]
-		self.saveTrainingFrames = False
+		self.saveTrainingFrames = True
+		self.trainingDataReady = False;
 
 		self.trainVarianceOffset = [41, 5]
 		self.rotationVar = [0., 0.]
@@ -261,6 +262,7 @@ class RelTracker:
 		to be pickled.
 		"""
 		self.trainingData = []
+		self.trainingDataReady = False;
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
 				relaxis.ClearTraining()
@@ -274,6 +276,7 @@ class RelTracker:
 
 		while self.GetProgress() < 1.:
 			self.ProgressTraining()
+		self.ClearTraining()
 
 	def GenerateTrainingIntensities(self, layerNum, trNum, supportPixOffset):
 
@@ -382,7 +385,7 @@ class RelTracker:
 					self.trainingRotLayers[-1].append([])
 					self.trainingFraLayers[-1].append([])
 
-
+		#Populate the intensity data structure with synthetic training examples
 		for layerNum, layer in enumerate(self.scalePredictors):
 
 			layerSupportPixOffset = self.supportPixOffset[layerNum]
@@ -405,6 +408,40 @@ class RelTracker:
 				print len(ints)
 				return
 	
+		#Some debug code to save training data
+		if self.trainingDataReady == False and False:
+			self.trainingDataReady = True
+
+			for layerNum, layer in enumerate(self.scalePredictors):
+				for relaxis in layer:
+					relaxis.ClearTraining()
+			pickle.dump((self.supportPixOffset,
+				self.trainingIntLayers,
+				self.trainingOffLayers,
+				self.trainingRotLayers,
+				self.trainingFraLayers,
+				self.cloudData,
+				self.cloudEnabled), open("training.dat","wb"),protocol = -1)
+			return
+
+		#Some debug code to load training data
+		if self.trainingDataReady == False and True:
+			self.trainingDataReady = True
+			(self.supportPixOffset,
+				self.trainingIntLayers,
+				self.trainingOffLayers,
+				self.trainingRotLayers,
+				self.trainingFraLayers,
+				self.cloudData,
+				self.cloudEnabled) = pickle.load(open("training.dat","rb"))
+
+			for trlayer, splayer in zip(self.scalePredictors, self.supportPixOffset):
+				#For each tracker
+				for trNum in range(numTrackers):
+					layer[trNum*2].supportPixOffset = splayer[trNum]
+					layer[trNum*2+1].supportPixOffset = splayer[trNum]
+			return
+
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
@@ -494,7 +531,11 @@ class RelTracker:
 			for relaxis in layer:
 				countDone += relaxis.TrainingComplete()
 				countTotal += 1.
-		return countDone / countTotal
+
+		prog = countDone / countTotal
+		if prog >= 1.:
+			self.ClearTraining()
+		return prog
 		
 	def Update(self):
 		if self.GetProgress() >= 1.:
