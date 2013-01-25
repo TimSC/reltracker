@@ -233,6 +233,7 @@ class RelTracker:
 		self.maxSupportOffset = [39, 20]
 		self.saveTrainingFrames = True
 		self.trainingDataReady = False;
+		self.predImageCount = 0;
 
 		self.trainVarianceOffset = [41, 5]
 		self.rotationVar = [0., 0.]
@@ -334,6 +335,7 @@ class RelTracker:
 			self.scalePredictors = []
 			self.supportPixOffset = []
 
+		if len(self.scalePredictors)==0:
 			#For each layer of hierarchy
 			for layerSettings, layerNumSupportPix, layerMaxSupportOffset \
 				in zip(self.settings, self.numSupportPix, self.maxSupportOffset):
@@ -425,7 +427,7 @@ class RelTracker:
 			return
 
 		#Some debug code to load training data
-		if self.trainingDataReady == False and True:
+		if self.trainingDataReady == False and False:
 			self.trainingDataReady = True
 			(self.supportPixOffset,
 				self.trainingIntLayers,
@@ -464,6 +466,9 @@ class RelTracker:
 		Request predictions based on a specified image and tracker position arrangement. The
 		resulting prediction is for all tracking points.
 		"""
+
+		#im.save("pred{0:05d}.png".format(self.predImageCount))
+		#self.predImageCount += 1
 
 		assert self.scalePredictors is not None #Train the model first!
 		assert len(pos) == len(self.scalePredictors[0]) / 2
@@ -511,7 +516,7 @@ class RelTracker:
 
 	def GetProgress(self):
 
-		if self.scalePredictors is None:
+		if self.scalePredictors is None or len(self.scalePredictors)==0:
 			return 0.
 
 		countDone = 0. #Counting the scale predictor initialisation as a valid step
@@ -542,6 +547,16 @@ class RelTracker:
 			return
 		self.ProgressTraining()
 
+	def TrainingDataComplete(self):
+		#This function may be useful for debugging
+		if self.scalePredictors is None:
+			self.scalePredictors = []
+			self.supportPixOffset = []
+
+		self.PrepareForPickle()
+		pickle.dump(self.serialTraining, open("trainingdata.dat","wb"), protocol=-1)
+		self.PostUnPickle()
+
 #************************************************************
 
 if __name__ == "__main__":
@@ -564,6 +579,8 @@ if __name__ == "__main__":
 			im = Image.open(imgFina)
 
 			reltracker.Add(im, posData[ti])
+
+		reltracker.TrainingDataComplete()
 
 		#Train the tracker
 		reltracker.Train()
