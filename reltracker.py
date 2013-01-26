@@ -25,15 +25,16 @@ def ReadPosData(fina):
 		pos += 2 + numPts
 	return out
 
-def DrawMarker(iml, posData):
+def DrawMarkers(iml, posData, col = (255,0,0)):
 	if posData is None: return
 	for pos in posData:
+		assert len(pos) == 2
 		for i in [-1,0,+1]:
 			for j in [-1,0,+1]:
-				col = (255,255,255)
 				try:
 					iml[int(round(pos[0]+i)),int(round(pos[1]+j))] = col
-				except:
+				except Exception as err:
+					print err
 					pass
 
 #*******************************************************************************
@@ -59,7 +60,7 @@ class RelAxis:
 		"""
 		self.trainingData.append((im, pos))
 
-	def ClearTraining(self):
+	def ClearTrainingImages(self):
 		"""
 		Clear training data from this object. This should allow the object
 		to be pickled.
@@ -218,12 +219,10 @@ class RelTracker:
 	def __init__(self):
 		self.trainingData = []
 
-		self.trainingIntLayers = None
-		self.trainingOffLayers = []
-		self.trainingRotLayers = []
-		self.trainingFraLayers = []
+		self.ClearTrainingIntensities()
 		self.cloudData = None
 		self.cloudEnabled = [1, 0]
+		self.trainingRegressorsCompleteFlag = False
 
 		self.numIterations = 5
 		self.scalePredictors = None
@@ -250,14 +249,15 @@ class RelTracker:
 
 		if self.saveTrainingFrames:
 			#Visualise tracking
-			iml = im.load()
-			DrawMarker(iml, pos)
-			im.save("training{0:05d}.jpg".format(len(self.trainingData)))
+			im2 = im.copy()
+			im2l = im2.load()
+			DrawMarkers(im2l, pos)
+			im2.save("training{0:05d}.jpg".format(len(self.trainingData)))
 
 		self.trainingData.append((im, pos))
 		assert(len(self.trainingData[0][1]) == len(self.trainingData[-1][1]))
 
-	def ClearTraining(self):
+	def ClearTrainingImages(self):
 		"""
 		Clear training data from this object. This should allow the object
 		to be pickled.
@@ -266,7 +266,13 @@ class RelTracker:
 		self.trainingDataReady = False;
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
-				relaxis.ClearTraining()
+				relaxis.ClearTrainingImages()
+
+	def ClearTrainingIntensities(self):
+		self.trainingIntLayers = None
+		self.trainingOffLayers = []
+		self.trainingRotLayers = []
+		self.trainingFraLayers = []
 
 	def Train(self):
 		"""
@@ -277,7 +283,8 @@ class RelTracker:
 
 		while self.GetProgress() < 1.:
 			self.ProgressTraining()
-		self.ClearTraining()
+		self.ClearTrainingImages()
+		self.ClearTrainingIntensities()
 
 	def GenerateTrainingIntensities(self, layerNum, trNum, supportPixOffset):
 
@@ -410,38 +417,9 @@ class RelTracker:
 				print len(ints)
 				return
 	
-		#Some debug code to save training data
-		if self.trainingDataReady == False and False:
-			self.trainingDataReady = True
-
-			for layerNum, layer in enumerate(self.scalePredictors):
-				for relaxis in layer:
-					relaxis.ClearTraining()
-			pickle.dump((self.supportPixOffset,
-				self.trainingIntLayers,
-				self.trainingOffLayers,
-				self.trainingRotLayers,
-				self.trainingFraLayers,
-				self.cloudData,
-				self.cloudEnabled), open("training.dat","wb"),protocol = -1)
-			return
-
-		#Some debug code to load training data
-		if self.trainingDataReady == False and False:
-			self.trainingDataReady = True
-			(self.supportPixOffset,
-				self.trainingIntLayers,
-				self.trainingOffLayers,
-				self.trainingRotLayers,
-				self.trainingFraLayers,
-				self.cloudData,
-				self.cloudEnabled) = pickle.load(open("training.dat","rb"))
-
-			for trlayer, splayer in zip(self.scalePredictors, self.supportPixOffset):
-				#For each tracker
-				for trNum in range(numTrackers):
-					layer[trNum*2].supportPixOffset = splayer[trNum]
-					layer[trNum*2+1].supportPixOffset = splayer[trNum]
+		#Some debug code on intensity data
+		if self.trainingDataReady == False:
+			self.TrainingIntensitiesReady()
 			return
 
 		#Train individual axis predictors
@@ -496,7 +474,7 @@ class RelTracker:
 		self.serialTraining = []
 		for im, pos in self.trainingData:
 			self.serialTraining.append((dict(data=im.tostring(), size=im.size, mode=im.mode), pos))
-		self.ClearTraining()
+		self.ClearTrainingImages()
 
 	def PostUnPickle(self):
 		assert self.serialTraining is not None
@@ -508,7 +486,7 @@ class RelTracker:
 		#Set training data in axis objects
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
-				relaxis.ClearTraining()
+				relaxis.ClearTrainingImages()
 				for tr in self.trainingData:
 					relaxis.Add(*tr)
 
@@ -538,8 +516,8 @@ class RelTracker:
 				countTotal += 1.
 
 		prog = countDone / countTotal
-		if prog >= 1.:
-			self.ClearTraining()
+		if prog >= 1. and not self.trainingRegressorsCompleteFlag:
+			self.TrainingRegressorsComplete()
 		return prog
 		
 	def Update(self):
@@ -549,13 +527,60 @@ class RelTracker:
 
 	def TrainingDataComplete(self):
 		#This function may be useful for debugging
-		if self.scalePredictors is None:
-			self.scalePredictors = []
-			self.supportPixOffset = []
+		if True:
+			if self.scalePredictors is None:
+				self.scalePredictors = []
+				self.supportPixOffset = []
 
-		self.PrepareForPickle()
-		pickle.dump(self.serialTraining, open("trainingdata.dat","wb"), protocol=-1)
-		self.PostUnPickle()
+			self.PrepareForPickle()
+			#pickle.dump(self.serialTraining, open("trainingdata.dat","wb"), protocol=-1)
+			#self.serialTraining = pickle.load(open("trainingdata.dat","rb"))
+			self.PostUnPickle()
+
+			#Check training images are ok
+			for imNum, (im, pos) in enumerate(self.trainingData):
+				im2 = im.copy()
+				im2l = im2.load()
+				DrawMarkers(im2l, pos, (255, 0, 0))
+				im2.save("train{0}.jpg".format(imNum))
+
+	def TrainingIntensitiesReady(self):
+		self.trainingDataReady = True
+
+		#Some debug code to save training data
+		if False:
+			for layerNum, layer in enumerate(self.scalePredictors):
+				for relaxis in layer:
+					relaxis.ClearTrainingImages()
+			pickle.dump((self.supportPixOffset,
+				self.trainingIntLayers,
+				self.trainingOffLayers,
+				self.trainingRotLayers,
+				self.trainingFraLayers,
+				self.cloudData,
+				self.cloudEnabled), open("training.dat","wb"),protocol = -1)
+
+		#Some debug code to load training data
+		if False:
+			self.trainingDataReady = True
+			(self.supportPixOffset,
+				self.trainingIntLayers,
+				self.trainingOffLayers,
+				self.trainingRotLayers,
+				self.trainingFraLayers,
+				self.cloudData,
+				self.cloudEnabled) = pickle.load(open("training.dat","rb"))
+
+			for trlayer, splayer in zip(self.scalePredictors, self.supportPixOffset):
+				#For each tracker
+				for trNum in range(numTrackers):
+					layer[trNum*2].supportPixOffset = splayer[trNum]
+					layer[trNum*2+1].supportPixOffset = splayer[trNum]
+
+	def TrainingRegressorsComplete(self):
+		self.ClearTrainingImages()
+		self.ClearTrainingIntensities()
+		self.trainingRegressorsCompleteFlag = True
 
 #************************************************************
 
@@ -584,7 +609,7 @@ if __name__ == "__main__":
 
 		#Train the tracker
 		reltracker.Train()
-		reltracker.ClearTraining() #Remove data that cannot be pickled
+		reltracker.ClearTrainingImages() #Remove data that cannot be pickled
 
 		#reltracker.PrepareForPickle()
 		#print "Pickling"
@@ -618,7 +643,7 @@ if __name__ == "__main__":
 			
 			#Visualise tracking
 			iml = im.load()
-			DrawMarker(iml, currentPos)
+			DrawMarkers(iml, currentPos)
 			im.save("{0:05d}.jpg".format(frameNum))
 	
 			#Go to next frame
