@@ -25,7 +25,7 @@ def ReadPosData(fina):
 		pos += 2 + numPts
 	return out
 
-def DrawMarkers(iml, posData, col = (255,0,0)):
+def DrawMarkers(iml, posData, col = (255,255,255)):
 	if posData is None: return
 	for pos in posData:
 		assert len(pos) == 2
@@ -445,9 +445,6 @@ class RelTracker:
 		resulting prediction is for all tracking points.
 		"""
 
-		#im.save("pred{0:05d}.png".format(self.predImageCount))
-		#self.predImageCount += 1
-
 		assert self.scalePredictors is not None #Train the model first!
 		assert len(pos) == len(self.scalePredictors[0]) / 2
 		if im.mode != "RGB": 
@@ -466,6 +463,11 @@ class RelTracker:
 
 					#Make a prediction
 					currentPos = relaxis.Predict(im, currentPos)
+
+		#im2 = im.copy()
+		#DrawMarkers(im2.load(), currentPos)
+		#im2.save("pred{0:05d}.png".format(self.predImageCount))
+		#self.predImageCount += 1
 
 		return currentPos
 
@@ -532,10 +534,10 @@ class RelTracker:
 				self.scalePredictors = []
 				self.supportPixOffset = []
 
-			self.PrepareForPickle()
+			#self.PrepareForPickle()
 			#pickle.dump(self.serialTraining, open("trainingdata.dat","wb"), protocol=-1)
 			#self.serialTraining = pickle.load(open("trainingdata.dat","rb"))
-			self.PostUnPickle()
+			#self.PostUnPickle()
 
 			#Check training images are ok
 			for imNum, (im, pos) in enumerate(self.trainingData):
@@ -574,13 +576,24 @@ class RelTracker:
 			for trlayer, splayer in zip(self.scalePredictors, self.supportPixOffset):
 				#For each tracker
 				for trNum in range(numTrackers):
-					layer[trNum*2].supportPixOffset = splayer[trNum]
-					layer[trNum*2+1].supportPixOffset = splayer[trNum]
+					trlayer[trNum*2].supportPixOffset = splayer[trNum]
+					trlayer[trNum*2+1].supportPixOffset = splayer[trNum]
 
 	def TrainingRegressorsComplete(self):
 		self.ClearTrainingImages()
 		self.ClearTrainingIntensities()
 		self.trainingRegressorsCompleteFlag = True
+
+		#self.PrepareForPickle()
+		#pickle.dump((self.scalePredictors, self.supportPixOffset),open("tracker.dat","wb"),protocol=-1)
+		#(self.scalePredictors, self.supportPixOffset) = pickle.load(open("tracker.dat","rb"))
+		#self.PostUnPickle()
+
+		#for trlayer, splayer in zip(self.scalePredictors, self.supportPixOffset):
+		#	#For each tracker
+		#	for trNum, splayerPt in enumerate(splayer):
+		#		trlayer[trNum*2].supportPixOffset = splayerPt
+		#		trlayer[trNum*2+1].supportPixOffset = splayerPt
 
 #************************************************************
 
@@ -592,7 +605,7 @@ if __name__ == "__main__":
 	assert os.path.exists(sys.argv[1])
 	posData = ReadPosData(sys.argv[1])
 
-	if 1:
+	if 0:
 		reltracker = RelTracker()
 
 		#Add training data to tracker
@@ -616,9 +629,9 @@ if __name__ == "__main__":
 		#pickle.dump(reltracker, open("tracker.dat","wb"), protocol = -1)
 
 	if 1:
-		#print "Unpickling"
-		#reltracker = pickle.load(open("tracker.dat","rb"))
-		#reltracker.PostUnPickle()
+		print "Unpickling"
+		reltracker = pickle.load(open("tracker.dat","rb"))
+		reltracker.PostUnPickle()
 
 		frameNum = 0
 		currentPos = None
