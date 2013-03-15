@@ -230,7 +230,7 @@ class RelTracker:
 		self.supportPixOffset = []
 		self.numSupportPix = [200, 200] #[500, 500]
 		self.maxSupportOffset = [39, 20]
-		self.saveTrainingFrames = True
+		self.saveTrainingFrames = False
 		self.trainingDataReady = False;
 		self.predImageCount = 0;
 
@@ -542,11 +542,11 @@ class RelTracker:
 			#self.PostUnPickle()
 
 			#Check training images are ok
-			for imNum, (im, pos) in enumerate(self.trainingData):
-				im2 = im.copy()
-				im2l = im2.load()
-				DrawMarkers(im2l, pos, (255, 0, 0))
-				im2.save("train{0}.jpg".format(imNum))
+			#for imNum, (im, pos) in enumerate(self.trainingData):
+			#	im2 = im.copy()
+			#	im2l = im2.load()
+			#	DrawMarkers(im2l, pos, (255, 0, 0))
+			#	im2.save("train{0}.jpg".format(imNum))
 
 	def TrainingIntensitiesReady(self):
 		self.trainingDataReady = True
@@ -657,9 +657,9 @@ if __name__ == "__main__":
 					currentPos = None
 			
 			#Visualise tracking
-			iml = im.load()
-			DrawMarkers(iml, currentPos)
-			im.save("{0:05d}.jpg".format(frameNum))
+			#iml = im.load()
+			#DrawMarkers(iml, currentPos)
+			#im.save("{0:05d}.jpg".format(frameNum))
 	
 			#Go to next frame
 			frameNum += 1
