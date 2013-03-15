@@ -286,30 +286,32 @@ class RelTracker:
 		self.ClearTrainingImages()
 		self.ClearTrainingIntensities()
 
-	def GenerateTrainingIntensities(self, layerNum, trNum, supportPixOffset):
+	def GenerateTrainingIntensities(self, layerNum, trNum, supportPixOffset, numToGen = 1000):
 
 		layerTrainVarOffset = self.trainVarianceOffset[layerNum]
 		layerRotationVar = self.rotationVar[layerNum]
 		layerNumTrainingOffsets = self.numTrainingOffsets[layerNum]
 		outTrainInt, outTrainOffsets, outTrainRot, outTrainFra = [], [], [], []
 
-		for frameNum, (im, pos) in enumerate(self.trainingData):
-			trPos = pos[trNum]
+		while len(outTrainInt) < numToGen: #Continue looping to generate required number of training offsets
+			for frameNum, (im, pos) in enumerate(self.trainingData):
+				if len(outTrainInt) >= numToGen: continue
+				trPos = pos[trNum]
 
-			trainRotation = np.random.randn() * layerRotationVar
-			trainOffset = np.random.randn(2) * layerTrainVarOffset
+				trainRotation = np.random.randn() * layerRotationVar
+				trainOffset = np.random.randn(2) * layerTrainVarOffset
 
-			offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
+				offset = (trainOffset[0] + trPos[0], trainOffset[1] + trPos[1])
 
-			pix = GetPixIntensityAtLoc(np.array(im), im, supportPixOffset, offset[0], offset[1], trainRotation)
-			if pix is None:
-				#Pixel is outside of image: discard this training offset
-				continue
+				pix = GetPixIntensityAtLoc(np.array(im), im, supportPixOffset, offset[0], offset[1], trainRotation)
+				if pix is None:
+					#Pixel is outside of image: discard this training offset
+					continue
 
-			outTrainInt.append(pix)
-			outTrainOffsets.append(trainOffset)
-			outTrainRot.append(trainRotation)
-			outTrainFra.append(frameNum)
+				outTrainInt.append(pix)
+				outTrainOffsets.append(trainOffset)
+				outTrainRot.append(trainRotation)
+				outTrainFra.append(frameNum)
 
 		return outTrainInt, outTrainOffsets, outTrainRot, outTrainFra
 
@@ -414,7 +416,7 @@ class RelTracker:
 				offs.extend(trainOffsets)
 				rots.extend(trainRot)
 				fra.extend(trainFra)
-				print len(ints)
+				#print len(ints)
 				return
 	
 		#Some debug code on intensity data
