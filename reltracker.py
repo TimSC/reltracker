@@ -52,6 +52,7 @@ class RelAxis:
 		self.shapeNoise = 12
 		self.cloudEnabled = 1
 		self.supportPixOffset = None
+		self.ClearTrainingData()
 
 	def Add(self, im, pos):
 		"""
@@ -66,6 +67,13 @@ class RelAxis:
 		to be pickled.
 		"""
 		self.trainingData = []
+
+	def ClearTrainingData(self):
+		self.trainInt = None
+		self.trainOff = None
+		self.trainRot = None
+		self.trainFra = None
+		self.cloudData = None
 
 	def Train(self):
 		"""
@@ -439,6 +447,7 @@ class RelTracker:
 				relaxis.cloudEnabled = self.cloudEnabled[layerNum]
 
 				relaxis.Train()
+				relaxis.ClearTrainingData()
 				return
 				
 	def Predict(self, im, pos):
