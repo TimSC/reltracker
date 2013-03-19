@@ -59,6 +59,21 @@ class PilImageToPyPngAdapter:
 				out.append(px)
 		return out
 
+def PyPngToPilImage(width, height, rows, args):
+	m = 'RGB'
+	planes = int(args['planes'])
+	if planes == 1: m = 'L'
+	if planes == 4: m = 'RGBA'
+	im = Image.new(m, (width, height))
+	iml = im.load()
+	for rowNum, row in enumerate(rows):
+		for colNum in range(width):
+			if planes > 1:
+				iml[colNum, rowNum] = tuple(row[colNum*planes:(colNum+1)*planes])
+			else:
+				iml[colNum, rowNum] = row[colNum]
+	return im
+
 #***************************************************************
 class RelAxis:
 	"""
@@ -523,10 +538,23 @@ class RelTracker:
 
 	def PostUnPickle(self):
 		assert self.serialTraining is not None
+		assert len(self.serialTraining)>0 or len(self.binaryPngs)>0
+		print "aaa", len(self.trainingData)
 		self.trainingData = []
-		for imDat, pos in self.serialTraining:
-			im = Image.fromstring(**imDat)
-			self.trainingData.append((im, pos))
+		#for imDat, pos in self.serialTraining:
+		#	im = Image.fromstring(**imDat)
+		#	self.trainingData.append((im, pos))
+
+		import png
+		for imDat, pos in self.binaryPngs:
+			read = png.Reader(file=StringIO.StringIO(imDat))
+			readRet = read.read()
+			print readRet
+			pilim = PyPngToPilImage(*readRet)
+			self.trainingData.append((pilim, pos))
+
+		print "zzz", len(self.trainingData)
+		time.sleep(10)
 
 		#Set training data in axis objects
 		for layerNum, layer in enumerate(self.scalePredictors):
