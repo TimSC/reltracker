@@ -522,39 +522,40 @@ class RelTracker:
 	def PrepareForPickle(self):
 		assert self.serialTraining is None
 		self.serialTraining = []
-		for im, pos in self.trainingData:
-			self.serialTraining.append((dict(data=im.tostring(), size=im.size, mode=im.mode), pos))
 
-		import png
-		self.binaryPngs = []
-		for im, pos in self.trainingData:
-			pngBinStr = StringIO.StringIO()
-			wri = png.Writer(size=im.size, greyscale=(len(im.mode)==1))
-			wri.write(pngBinStr, PilImageToPyPngAdapter(im))
-			pngBin = pngBinStr.getvalue()
-			self.binaryPngs.append((pngBin, pos))
+		if 0:
+			for im, pos in self.trainingData:
+				self.serialTraining.append((dict(data=im.tostring(), size=im.size, mode=im.mode), pos))
+
+		if 1:
+			import png
+			self.binaryPngs = []
+			for im, pos in self.trainingData:
+				pngBinStr = StringIO.StringIO()
+				wri = png.Writer(size=im.size, greyscale=(len(im.mode)==1))
+				wri.write(pngBinStr, PilImageToPyPngAdapter(im))
+				pngBin = pngBinStr.getvalue()
+				self.binaryPngs.append((pngBin, pos))
 
 		self.ClearTrainingImages()
 
 	def PostUnPickle(self):
 		assert self.serialTraining is not None
 		assert len(self.serialTraining)>0 or len(self.binaryPngs)>0
-		print "aaa", len(self.trainingData)
+
 		self.trainingData = []
-		#for imDat, pos in self.serialTraining:
-		#	im = Image.fromstring(**imDat)
-		#	self.trainingData.append((im, pos))
+		for imDat, pos in self.serialTraining:
+			im = Image.fromstring(**imDat)
+			self.trainingData.append((im, pos))
 
-		import png
-		for imDat, pos in self.binaryPngs:
-			read = png.Reader(file=StringIO.StringIO(imDat))
-			readRet = read.read()
-			print readRet
-			pilim = PyPngToPilImage(*readRet)
-			self.trainingData.append((pilim, pos))
-
-		print "zzz", len(self.trainingData)
-		time.sleep(10)
+		if len(self.trainingData)==0:
+			import png
+			for imDat, pos in self.binaryPngs:
+				read = png.Reader(file=StringIO.StringIO(imDat))
+				readRet = read.read()
+				print readRet
+				pilim = PyPngToPilImage(*readRet)
+				self.trainingData.append((pilim, pos))
 
 		#Set training data in axis objects
 		for layerNum, layer in enumerate(self.scalePredictors):
