@@ -606,6 +606,34 @@ class RelTracker:
 		#		trlayer[trNum*2].supportPixOffset = splayerPt
 		#		trlayer[trNum*2+1].supportPixOffset = splayerPt
 
+	def ShallowClone(self):
+		clone = RelTracker()
+		clone.trainingData = self.trainingData
+		clone.trainingIntLayers = self.trainingIntLayers
+		clone.trainingOffLayers = self.trainingOffLayers
+		clone.trainingRotLayers = self.trainingRotLayers
+		clone.trainingFraLayers = self.trainingFraLayers
+
+		clone.cloudData = self.cloudData
+		clone.cloudEnabled = self.cloudEnabled
+		clone.trainingRegressorsCompleteFlag = self.trainingRegressorsCompleteFlag
+
+		clone.numIterations = self.numIterations
+		clone.scalePredictors = self.scalePredictors
+		clone.serialTraining = self.serialTraining
+		clone.supportPixOffset = self.supportPixOffset
+		clone.numSupportPix = self.numSupportPix
+		clone.maxSupportOffset = self.maxSupportOffset
+		clone.saveTrainingFrames = self.saveTrainingFrames
+		clone.trainingDataReady = self.trainingDataReady
+		clone.predImageCount = self.predImageCount
+
+		clone.trainVarianceOffset = self.trainVarianceOffset
+		clone.rotationVar = self.rotationVar
+		clone.numTrainingOffsets = self.numTrainingOffsets
+		clone.settings = self.settings
+		return clone
+
 #************************************************************
 
 if __name__ == "__main__":
