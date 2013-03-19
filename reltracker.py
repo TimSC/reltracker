@@ -1,6 +1,6 @@
 
 from PIL import Image
-import time, math, pickle, sys, os, copy
+import time, math, pickle, sys, os, copy, StringIO
 import numpy as np
 import sklearn.ensemble as ensemble
 from relutil import GetPixIntensityAtLoc, NumpyArrToGrey, TrainConvertToGrey
@@ -39,6 +39,27 @@ def DrawMarkers(iml, posData, col = (255,255,255)):
 
 #*******************************************************************************
 
+class PilImageToPyPngAdapter:
+	def __init__(self, im):
+		self.im = im
+		self.iml = im.load()
+
+	def __len__(self):
+		return self.im.size[1]
+
+	def __getitem__(self, row):
+		out = []
+		for col in range(self.im.size[0]):
+			px = self.iml[col, row]
+			if hasattr(px, '__iter__'):
+				#Multi-channel image
+				out.extend(px)
+			else:
+				#Single channel image
+				out.append(px)
+		return out
+
+#***************************************************************
 class RelAxis:
 	"""
 	RelAxis represents a regression model in a particular axis. A tracking
@@ -235,6 +256,7 @@ class RelTracker:
 		self.numIterations = 5
 		self.scalePredictors = None
 		self.serialTraining = None
+		self.binaryPngs = None
 		self.supportPixOffset = []
 		self.numSupportPix = [200, 200] #[500, 500]
 		self.maxSupportOffset = [39, 20]
@@ -487,6 +509,16 @@ class RelTracker:
 		self.serialTraining = []
 		for im, pos in self.trainingData:
 			self.serialTraining.append((dict(data=im.tostring(), size=im.size, mode=im.mode), pos))
+
+		import png
+		self.binaryPngs = []
+		for im, pos in self.trainingData:
+			pngBinStr = StringIO.StringIO()
+			wri = png.Writer(size=im.size, greyscale=(len(im.mode)==1))
+			wri.write(pngBinStr, PilImageToPyPngAdapter(im))
+			pngBin = pngBinStr.getvalue()
+			self.binaryPngs.append((pngBin, pos))
+
 		self.ClearTrainingImages()
 
 	def PostUnPickle(self):
@@ -621,6 +653,7 @@ class RelTracker:
 		clone.numIterations = self.numIterations
 		clone.scalePredictors = self.scalePredictors
 		clone.serialTraining = self.serialTraining
+		clone.binaryPngs = self.binaryPngs
 		clone.supportPixOffset = self.supportPixOffset
 		clone.numSupportPix = self.numSupportPix
 		clone.maxSupportOffset = self.maxSupportOffset
