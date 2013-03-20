@@ -532,8 +532,7 @@ class RelTracker:
 			self.binaryPngs = []
 			for im, pos in self.trainingData:
 				pngBinStr = StringIO.StringIO()
-				wri = png.Writer(size=im.size, greyscale=(len(im.mode)==1), compression=1)
-				wri.write(pngBinStr, PilImageToPyPngAdapter(im))
+				im.save(pngBinStr, 'PNG')
 				pngBin = pngBinStr.getvalue()
 				self.binaryPngs.append((pngBin, pos))
 
