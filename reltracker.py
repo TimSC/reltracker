@@ -4,6 +4,7 @@ import time, math, pickle, sys, os, copy, StringIO
 import numpy as np
 import sklearn.ensemble as ensemble
 from relutil import GetPixIntensityAtLoc, NumpyArrToGrey, TrainConvertToGrey
+from multiprocessing import Process, Pipe
 
 #******* Utility functions
 
@@ -36,6 +37,29 @@ def DrawMarkers(iml, posData, col = (255,255,255)):
 				except Exception as err:
 					print err
 					pass
+
+
+def PyPngToPilImage(width, height, rows, args):
+	m = 'RGB'
+	planes = int(args['planes'])
+	if planes == 1: m = 'L'
+	if planes == 4: m = 'RGBA'
+	im = Image.new(m, (width, height))
+	iml = im.load()
+	for rowNum, row in enumerate(rows):
+		for colNum in range(width):
+			if planes > 1:
+				iml[colNum, rowNum] = tuple(row[colNum*planes:(colNum+1)*planes])
+			else:
+				iml[colNum, rowNum] = row[colNum]
+	return im
+
+#************* Training Thread
+
+def TrainingWorker(relaxis, pipe):
+	print "Training worker thread started"
+	relaxis.Train()
+	pipe.send([relaxis])
 
 #***************************************************************
 class RelAxis:
@@ -446,8 +470,17 @@ class RelTracker:
 				relaxis.cloudData = self.cloudData[relaxis.trackerNum]
 				relaxis.cloudEnabled = self.cloudEnabled[layerNum]
 
+				parentPipe, childPipe = Pipe()
+				
+				
+				#p = Process(target=TrainingWorker, args=(relaxis, childPipe))
+				#p.start()
+
 				relaxis.Train()
+				#p.join()
+
 				relaxis.ClearTrainingData()
+
 				return
 				
 	def Predict(self, im, pos):
@@ -510,9 +543,17 @@ class RelTracker:
 			self.trainingData.append((im, pos))
 
 		if len(self.trainingData)==0:
+#			for imDat, pos in self.binaryPngs:
+#				pngBinStr = StringIO.StringIO(imDat)
+#				pilim = Image.open(pngBinStr, 'PNG')
+#				self.trainingData.append((pilim, pos))
+
+			import png
 			for imDat, pos in self.binaryPngs:
-				pngBinStr = StringIO.StringIO(imDat)
-				pilim = Image.open(pngBinStr, 'PNG')
+				read = png.Reader(file=StringIO.StringIO(imDat))
+				readRet = read.read()
+				print readRet
+				pilim = PyPngToPilImage(*readRet)
 				self.trainingData.append((pilim, pos))
 
 		#Set training data in axis objects
