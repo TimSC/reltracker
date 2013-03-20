@@ -447,6 +447,7 @@ class RelTracker:
 			return
 
 		#Train individual axis predictors
+		processList = []
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxisNum, relaxis in enumerate(layer):
 				if relaxis.TrainingComplete(): continue #Skip completed trackers
@@ -462,19 +463,23 @@ class RelTracker:
 
 				parentPipe, childPipe = Pipe()
 				relaxis.TrainPrep()
-				#relaxis.TrainFit()
 
 				reg = ensemble.GradientBoostingRegressor()
 				
 				p = Process(target=TrainingWorker, args=(reg, relaxis.trainDataFinal, relaxis.labels, childPipe))
 				p.start()
+				processList.append([layerNum, relaxisNum, p, parentPipe])
+
+				if len(processList)>=4: break;
+			if len(processList)>=4: break;
+
+		if len(processList)>0:	
+			for layerNum, relaxisNum, p, parentPipe in processList:
 				p.join()
 				regTrained = parentPipe.recv()
-				layer[relaxisNum].reg = regTrained[0]
-				
-				layer[relaxisNum].ClearTrainingData()
-
-				return
+				self.scalePredictors[layerNum][relaxisNum].reg = regTrained[0]
+				self.scalePredictors[layerNum][relaxisNum].ClearTrainingData()
+			return
 				
 	def Predict(self, im, pos):
 		"""
