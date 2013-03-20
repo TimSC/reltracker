@@ -530,6 +530,7 @@ class RelTracker:
 			for imDat, pos in self.binaryPngs:
 				pngBinStr = StringIO.StringIO(imDat)
 				pilim = Image.open(pngBinStr, 'r')
+				self.trainingData.append((pilim, pos))
 
 		#Set training data in axis objects
 		for layerNum, layer in enumerate(self.scalePredictors):
