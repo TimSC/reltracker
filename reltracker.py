@@ -41,19 +41,9 @@ def DrawMarkers(iml, posData, col = (255,255,255)):
 #************* Training Thread
 
 def TrainingWorker(relaxis, pipe):
-	print "Training worker thread started"
-	
 	relaxis.TrainPrep()
-
-	print "a"
-
 	relaxis.TrainFit()
-
-	print "b"
-
 	pipe.send([relaxis.reg])
-
-	print "Training worker thread done"
 
 #***************************************************************
 class RelAxis:
@@ -456,7 +446,6 @@ class RelTracker:
 				relaxis.cloudEnabled = self.cloudEnabled[layerNum]
 
 				parentPipe, childPipe = multiprocessing.Pipe()
-				relaxis.TrainPrep()
 				
 				p = multiprocessing.Process(target=TrainingWorker, args=(relaxis, childPipe))
 				p.start()
