@@ -40,10 +40,12 @@ def DrawMarkers(iml, posData, col = (255,255,255)):
 
 #************* Training Thread
 
-def TrainingWorker(relaxis, pipe):
+def TrainingWorker(reg, data, labels, pipe):
 	print "Training worker thread started"
-	relaxis.Train()
-	pipe.send([relaxis])
+	
+	reg.fit(data, labels)
+
+	pipe.send([reg])
 
 #***************************************************************
 class RelAxis:
@@ -82,7 +84,7 @@ class RelAxis:
 		self.trainFra = None
 		self.cloudData = None
 
-	def Train(self):
+	def TrainPrep(self):
 		"""
 		Train a regression model based on the added training data. This class only
 		considers a single axis for a single tracking point.
@@ -142,19 +144,23 @@ class RelAxis:
 		#Select axis labels
 		trainOffArr = np.array(self.trainOff)
 		if self.axis == "x":
-			labels = trainOffArr[:,0]
+			self.labels = trainOffArr[:,0]
 		else:
-			labels = trainOffArr[:,1]
+			self.labels = trainOffArr[:,1]
 	
 		#If selected, merge the cloud position data with pixel intensities
 		if self.cloudEnabled:
-			trainDataFinal = np.hstack((greyPix, trainCloudPos))
+			self.trainDataFinal = np.hstack((greyPix, trainCloudPos))
 		else:
-			trainDataFinal = greyPix
+			self.trainDataFinal = greyPix
 
+	def TrainFit(self):
 		#Train regression model
 		self.reg = ensemble.GradientBoostingRegressor()
-		self.reg.fit(trainDataFinal, labels)
+		self.reg.fit(self.trainDataFinal, self.labels)
+
+		self.trainDataFinal = None
+		self.labels = None
 
 	def Predict(self, im, pos):
 		"""
@@ -442,7 +448,7 @@ class RelTracker:
 
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
-			for relaxis in layer:
+			for relaxisNum, relaxis in enumerate(layer):
 				if relaxis.TrainingComplete(): continue #Skip completed trackers
 
 				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
@@ -455,15 +461,18 @@ class RelTracker:
 				relaxis.cloudEnabled = self.cloudEnabled[layerNum]
 
 				parentPipe, childPipe = Pipe()
-				
-				
-				#p = Process(target=TrainingWorker, args=(relaxis, childPipe))
-				#p.start()
+				relaxis.TrainPrep()
+				#relaxis.TrainFit()
 
-				relaxis.Train()
-				#p.join()
-
-				relaxis.ClearTrainingData()
+				reg = ensemble.GradientBoostingRegressor()
+				
+				p = Process(target=TrainingWorker, args=(reg, relaxis.trainDataFinal, relaxis.labels, childPipe))
+				p.start()
+				p.join()
+				regTrained = parentPipe.recv()
+				layer[relaxisNum].reg = regTrained[0]
+				
+				layer[relaxisNum].ClearTrainingData()
 
 				return
 				
