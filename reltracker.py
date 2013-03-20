@@ -40,12 +40,20 @@ def DrawMarkers(iml, posData, col = (255,255,255)):
 
 #************* Training Thread
 
-def TrainingWorker(reg, data, labels, pipe):
+def TrainingWorker(relaxis, pipe):
 	print "Training worker thread started"
 	
-	reg.fit(data, labels)
+	relaxis.TrainPrep()
 
-	pipe.send([reg])
+	print "a"
+
+	relaxis.TrainFit()
+
+	print "b"
+
+	pipe.send([relaxis.reg])
+
+	print "Training worker thread done"
 
 #***************************************************************
 class RelAxis:
@@ -56,26 +64,11 @@ class RelAxis:
 
 	def __init__(self):
 		self.reg = None
-		self.trainingData = []
 		self.verbose = 1
 		self.shapeNoise = 12
 		self.cloudEnabled = 1
 		self.supportPixOffset = None
 		self.ClearTrainingData()
-
-	def Add(self, im, pos):
-		"""
-		Add an annotated frame with a set of tracker positions for later 
-		training of the regression model.
-		"""
-		self.trainingData.append((im, pos))
-
-	def ClearTrainingImages(self):
-		"""
-		Clear training data from this object. This should allow the object
-		to be pickled.
-		"""
-		self.trainingData = []
 
 	def ClearTrainingData(self):
 		self.trainInt = None
@@ -287,9 +280,9 @@ class RelTracker:
 		"""
 		self.trainingData = []
 		self.trainingDataReady = False;
-		for layerNum, layer in enumerate(self.scalePredictors):
-			for relaxis in layer:
-				relaxis.ClearTrainingImages()
+		#for layerNum, layer in enumerate(self.scalePredictors):
+		#	for relaxis in layer:
+		#		relaxis.ClearTrainingImages()
 
 	def ClearTrainingIntensities(self):
 		self.trainingIntLayers = None
@@ -389,8 +382,8 @@ class RelTracker:
 						relaxis.supportPixOffset = trSupportPixOffset
 						for settingKey in layerSettings:
 							setattr(relaxis, settingKey, layerSettings[settingKey])
-						for td in self.trainingData:
-							relaxis.Add(*td)
+						#for td in self.trainingData:
+						#	relaxis.Add(*td)
 						layer.append(relaxis)
 
 				self.scalePredictors.append(layer)
@@ -464,10 +457,8 @@ class RelTracker:
 
 				parentPipe, childPipe = multiprocessing.Pipe()
 				relaxis.TrainPrep()
-
-				reg = ensemble.GradientBoostingRegressor()
 				
-				p = multiprocessing.Process(target=TrainingWorker, args=(reg, relaxis.trainDataFinal, relaxis.labels, childPipe))
+				p = multiprocessing.Process(target=TrainingWorker, args=(relaxis, childPipe))
 				p.start()
 				processList.append([layerNum, relaxisNum, p, parentPipe])
 
@@ -551,8 +542,8 @@ class RelTracker:
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
 				relaxis.ClearTrainingImages()
-				for tr in self.trainingData:
-					relaxis.Add(*tr)
+				#for tr in self.trainingData:
+				#	relaxis.Add(*tr)
 
 		self.serialTraining = None
 		self.binaryPngs = None
