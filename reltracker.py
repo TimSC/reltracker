@@ -4,7 +4,7 @@ import time, math, pickle, sys, os, copy, StringIO
 import numpy as np
 import sklearn.ensemble as ensemble
 from relutil import GetPixIntensityAtLoc, NumpyArrToGrey, TrainConvertToGrey
-from multiprocessing import Process, Pipe
+import multiprocessing
 
 #******* Utility functions
 
@@ -260,6 +260,7 @@ class RelTracker:
 		self.rotationVar = [0., 0.]
 		self.numTrainingOffsets = [2000, 2000] #[5000, 5000]
 		self.settings = [{},{}]
+		self.numProcesses = multiprocessing.cpu_count()
 
 	def Add(self, im, pos):
 		"""
@@ -461,17 +462,17 @@ class RelTracker:
 				relaxis.cloudData = self.cloudData[relaxis.trackerNum]
 				relaxis.cloudEnabled = self.cloudEnabled[layerNum]
 
-				parentPipe, childPipe = Pipe()
+				parentPipe, childPipe = multiprocessing.Pipe()
 				relaxis.TrainPrep()
 
 				reg = ensemble.GradientBoostingRegressor()
 				
-				p = Process(target=TrainingWorker, args=(reg, relaxis.trainDataFinal, relaxis.labels, childPipe))
+				p = multiprocessing.Process(target=TrainingWorker, args=(reg, relaxis.trainDataFinal, relaxis.labels, childPipe))
 				p.start()
 				processList.append([layerNum, relaxisNum, p, parentPipe])
 
-				if len(processList)>=4: break;
-			if len(processList)>=4: break;
+				if len(processList)>=self.numProcesses: break;
+			if len(processList)>=self.numProcesses: break;
 
 		if len(processList)>0:	
 			for layerNum, relaxisNum, p, parentPipe in processList:
