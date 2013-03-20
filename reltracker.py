@@ -37,43 +37,6 @@ def DrawMarkers(iml, posData, col = (255,255,255)):
 					print err
 					pass
 
-#*******************************************************************************
-
-class PilImageToPyPngAdapter:
-	def __init__(self, im):
-		self.im = im
-		self.iml = im.load()
-
-	def __len__(self):
-		return self.im.size[1]
-
-	def __getitem__(self, row):
-		out = []
-		for col in range(self.im.size[0]):
-			px = self.iml[col, row]
-			if hasattr(px, '__iter__'):
-				#Multi-channel image
-				out.extend(px)
-			else:
-				#Single channel image
-				out.append(px)
-		return out
-
-def PyPngToPilImage(width, height, rows, args):
-	m = 'RGB'
-	planes = int(args['planes'])
-	if planes == 1: m = 'L'
-	if planes == 4: m = 'RGBA'
-	im = Image.new(m, (width, height))
-	iml = im.load()
-	for rowNum, row in enumerate(rows):
-		for colNum in range(width):
-			if planes > 1:
-				iml[colNum, rowNum] = tuple(row[colNum*planes:(colNum+1)*planes])
-			else:
-				iml[colNum, rowNum] = row[colNum]
-	return im
-
 #***************************************************************
 class RelAxis:
 	"""
@@ -528,7 +491,6 @@ class RelTracker:
 				self.serialTraining.append((dict(data=im.tostring(), size=im.size, mode=im.mode), pos))
 
 		if 1:
-			import png
 			self.binaryPngs = []
 			for im, pos in self.trainingData:
 				pngBinStr = StringIO.StringIO()
@@ -548,12 +510,9 @@ class RelTracker:
 			self.trainingData.append((im, pos))
 
 		if len(self.trainingData)==0:
-			import png
 			for imDat, pos in self.binaryPngs:
-				read = png.Reader(file=StringIO.StringIO(imDat))
-				readRet = read.read()
-				print readRet
-				pilim = PyPngToPilImage(*readRet)
+				pngBinStr = StringIO.StringIO(imDat)
+				pilim = Image.open(pngBinStr, 'PNG')
 				self.trainingData.append((pilim, pos))
 
 		#Set training data in axis objects
@@ -564,6 +523,7 @@ class RelTracker:
 					relaxis.Add(*tr)
 
 		self.serialTraining = None
+		self.binaryPngs = None
 
 	def GetProgress(self):
 
