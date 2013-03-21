@@ -41,9 +41,11 @@ def DrawMarkers(iml, posData, col = (255,255,255)):
 #************* Training Thread
 
 def TrainingWorker(relaxis, pipe):
+
 	relaxis.TrainPrep()
 	relaxis.TrainFit()
 	pipe.send([relaxis.reg])
+
 
 #***************************************************************
 class RelAxis:
@@ -140,6 +142,7 @@ class RelAxis:
 	def TrainFit(self):
 		#Train regression model
 		self.reg = ensemble.GradientBoostingRegressor()
+
 		self.reg.fit(self.trainDataFinal, self.labels)
 
 		self.trainDataFinal = None
@@ -456,7 +459,7 @@ class RelTracker:
 
 		if len(processList)>0:	
 			for layerNum, relaxisNum, p, parentPipe in processList:
-				p.join()
+				#p.join()
 				regTrained = parentPipe.recv()
 				self.scalePredictors[layerNum][relaxisNum].reg = regTrained[0]
 				self.scalePredictors[layerNum][relaxisNum].ClearTrainingData()
