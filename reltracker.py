@@ -500,13 +500,13 @@ class RelTracker:
 	def PrepareForPickle(self):
 		assert self.serialTraining is None
 		self.serialTraining = []
+		self.binaryPngs = []
 
 		if 0:
 			for im, pos in self.trainingData:
 				self.serialTraining.append((dict(data=im.tostring(), size=im.size, mode=im.mode), pos))
 
 		if 1:
-			self.binaryPngs = []
 			for im, pos in self.trainingData:
 				pngBinStr = StringIO.StringIO()
 				im.save(pngBinStr, 'PNG')
@@ -515,27 +515,25 @@ class RelTracker:
 
 		self.ClearTrainingImages()
 
-	def PostUnPickle(self):
+	def PostUnPickle(self, log):
+                
 		assert self.serialTraining is not None
-		assert len(self.serialTraining)>0 or len(self.binaryPngs)>0
-
+		assert self.binaryPngs is not None
 		self.trainingData = []
-		for imDat, pos in self.serialTraining:
-			im = Image.fromstring(**imDat)
-			self.trainingData.append((im, pos))
 
+                #Decode raw pixel image from serial source
+		if len(self.serialTraining)>0:
+                        for imDat, pos in self.serialTraining:
+                                im = Image.fromstring(**imDat)
+                                self.trainingData.append((im, pos))
+			
+                #If no images found
 		if len(self.trainingData)==0:
+                        #Decode image which is compressed as an image file
 			for imDat, pos in self.binaryPngs:
 				pngBinStr = StringIO.StringIO(imDat)
 				pilim = Image.open(pngBinStr, 'r')
 				self.trainingData.append((pilim, pos))
-
-		#Set training data in axis objects
-		for layerNum, layer in enumerate(self.scalePredictors):
-			for relaxis in layer:
-				relaxis.ClearTrainingImages()
-				#for tr in self.trainingData:
-				#	relaxis.Add(*tr)
 
 		self.serialTraining = None
 		self.binaryPngs = None
