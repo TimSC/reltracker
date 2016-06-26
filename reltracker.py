@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 from PIL import Image
 import time, math, pickle, sys, os, copy
 import numpy as np
@@ -73,7 +73,7 @@ class RelAxis:
 		#repeatedly recalculated!
 		if self.cloudEnabled: 
 			if self.verbose: 
-				print "Calc distances"
+				print("Calc distances")
 				sys.stdout.flush()
 			trainCloudPos = []
 			for frameNum, offset, rotation in \
@@ -356,7 +356,7 @@ class RelTracker:
 				offs.extend(trainOffsets)
 				rots.extend(trainRot)
 				fra.extend(trainFra)
-				print len(ints)
+				print(len(ints))
 				return
 	
 		#Train individual axis predictors
@@ -364,7 +364,7 @@ class RelTracker:
 			for relaxis in layer:
 				if relaxis.TrainingComplete(): continue #Skip completed trackers
 
-				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
+				print("Training", layerNum, relaxis.trackerNum, relaxis.axis)
 				sys.stdout.flush()
 				relaxis.trainInt = self.trainingIntLayers[layerNum][relaxis.trackerNum]
 				relaxis.trainOff = self.trainingOffLayers[layerNum][relaxis.trackerNum]
@@ -394,7 +394,7 @@ class RelTracker:
 
 				#For each axis predictor,
 				for axisNum, relaxis in enumerate(layer):
-					#print "Predict", layerNum, relaxis.trackerNum, relaxis.axis
+					#print("Predict", layerNum, relaxis.trackerNum, relaxis.axis)
 
 					#Make a prediction
 					currentPos = relaxis.Predict(im, currentPos)
@@ -445,7 +445,7 @@ class RelTracker:
 
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
-		print "Usage:",sys.argv[0],"markedPositions.dat /path/to/images"
+		print("Usage:",sys.argv[0],"markedPositions.dat /path/to/images")
 		exit(0)
 
 	assert os.path.exists(sys.argv[1])
@@ -458,7 +458,7 @@ if __name__ == "__main__":
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
 			assert os.path.exists(imgFina)
-			print ti, imgFina
+			print(ti, imgFina)
 			
 			im = Image.open(imgFina)
 
@@ -469,11 +469,11 @@ if __name__ == "__main__":
 		reltracker.ClearTraining() #Remove data that cannot be pickled
 
 		#reltracker.PrepareForPickle()
-		#print "Pickling"
+		#print("Pickling")
 		#pickle.dump(reltracker, open("tracker.dat","wb"), protocol = -1)
 
 	if 1:
-		#print "Unpickling"
+		#print("Unpickling")
 		#reltracker = pickle.load(open("tracker.dat","rb"))
 		#reltracker.PostUnPickle()
 
@@ -484,7 +484,7 @@ if __name__ == "__main__":
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(frameNum)
 			if not os.path.exists(imgFina):
 				break
-			print "frameNum", frameNum
+			print("frameNum", frameNum)
 			im = Image.open(imgFina)
 
 			if frameNum in posData:
@@ -495,7 +495,7 @@ if __name__ == "__main__":
 				try:
 					currentPos = reltracker.Predict(im, currentPos)
 				except Exception as err:
-					print err
+					print(err)
 					currentPos = None
 			
 			#Visualise tracking

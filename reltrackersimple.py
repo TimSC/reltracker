@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 from PIL import Image
 import time, math, pickle, sys, os, copy
 import numpy as np
@@ -140,7 +140,7 @@ class RelAxisSimple:
 				trainOffsetsY.append(trainOffset[1])
 				trainRotations.append(trainRotation)
 				trainOnFrameNum.append(frameNum)
-			if self.verbose: print len(trainPix)
+			if self.verbose: print(len(trainPix))
 		numValidTraining = len(trainPix)
 		assert numValidTraining > 0
 
@@ -154,7 +154,7 @@ class RelAxisSimple:
 		#Note: this implementation is not efficiant as the distances are
 		#repeatedly recalculated!
 		if self.cloudEnabled: 
-			if self.verbose: print "Calc distances"
+			if self.verbose: print("Calc distances")
 			trainCloudPos = []
 			for frameNum, offsetX, offsetY, rotation in \
 				zip(trainOnFrameNum, trainOffsetsX, trainOffsetsY, trainRotations):
@@ -353,7 +353,7 @@ class RelTrackerSimple:
 		#Train individual axis predictors
 		for layerNum, layer in enumerate(self.scalePredictors):
 			for relaxis in layer:
-				print "Training", layerNum, relaxis.trackerNum, relaxis.axis
+				print("Training", layerNum, relaxis.trackerNum, relaxis.axis)
 				relaxis.Train()
 
 	def Predict(self, im, pos):
@@ -376,7 +376,7 @@ class RelTrackerSimple:
 
 				#For each axis predictor,
 				for axisNum, relaxis in enumerate(layer):
-					#print "Predict", layerNum, relaxis.trackerNum, relaxis.axis
+					#print("Predict", layerNum, relaxis.trackerNum, relaxis.axis)
 
 					#Make a prediction
 					currentPos = relaxis.Predict(im, currentPos)
@@ -387,7 +387,7 @@ class RelTrackerSimple:
 
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
-		print "Usage:",sys.argv[0],"markedPositions.dat /path/to/images"
+		print("Usage:",sys.argv[0],"markedPositions.dat /path/to/images")
 		exit(0)
 
 	assert os.path.exists(sys.argv[1])
@@ -400,7 +400,7 @@ if __name__ == "__main__":
 		for ti in posData:
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(ti)
 			assert os.path.exists(imgFina)
-			print ti, imgFina
+			print(ti, imgFina)
 			im = Image.open(imgFina)
 
 			reltracker.Add(im, posData[ti])
@@ -421,7 +421,7 @@ if __name__ == "__main__":
 			imgFina = sys.argv[2]+"/{0:05d}.png".format(frameNum)
 			if not os.path.exists(imgFina):
 				break
-			print "frameNum", frameNum
+			print("frameNum", frameNum)
 			im = Image.open(imgFina)
 
 			if frameNum in posData:
@@ -432,7 +432,7 @@ if __name__ == "__main__":
 				try:
 					currentPos = reltracker.Predict(im, currentPos)
 				except Exception as err:
-					print err
+					print(err)
 					currentPos = None
 			
 			#Visualise tracking
@@ -453,5 +453,3 @@ if __name__ == "__main__":
 			frameNum += 1
 
 			
-
-
