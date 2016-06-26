@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, os
 from PIL import Image
 from reltracker import ReadPosData, RelTracker
@@ -16,7 +17,7 @@ def EvalParam(settings):
 	for ti in posData:
 		imgFina = sys.argv[3]+"/{0:05d}.png".format(ti)
 		assert os.path.exists(imgFina)
-		print ti, imgFina
+		print(ti, imgFina)
 			
 		im = Image.open(imgFina)
 
@@ -35,7 +36,7 @@ def EvalParam(settings):
 			imgFina = sys.argv[3]+"/{0:05d}.png".format(frameNum)
 			if not os.path.exists(imgFina):
 				break
-			print "frameNum", frameNum
+			print("frameNum", frameNum)
 			im = Image.open(imgFina)
 
 			if currentPos is not None:
@@ -43,7 +44,7 @@ def EvalParam(settings):
 				try:
 					currentPos = reltracker.Predict(im, currentPos)
 				except Exception as err:
-					print err
+					print(err)
 					currentPos = None
 
 			if frameNum in testData:
@@ -64,7 +65,7 @@ def EvalParam(settings):
 			
 if __name__ == "__main__":
 	if len(sys.argv) < 4:
-		print "Usage:",sys.argv[0],"markedPositions.dat testPositions.dat /path/to/images"
+		print("Usage:",sys.argv[0],"markedPositions.dat testPositions.dat /path/to/images")
 		exit(0)
 	
 	outFi = open("evalparam2posrot.txt","wt")
